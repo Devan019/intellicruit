@@ -139,6 +139,7 @@ export default function ApplicationForm({ job, testResult, onSubmit, parsedResum
       // Prepare FormData
       const formData = new FormData();
       formData.append("resume_file", file); // this key must match FastAPI
+      
 
       try {
         const response = await axios.post(
