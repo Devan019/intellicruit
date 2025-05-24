@@ -4,7 +4,7 @@ import { Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
 import { motion } from "framer-motion"
 
-export function ThemeToggle() {
+export function NavbarThemeToggle() {
   const { theme, setTheme } = useTheme()
 
   return (
@@ -12,12 +12,10 @@ export function ThemeToggle() {
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
       onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-      className="fixed right-4 bottom-4 z-[99] inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background text-foreground hover:bg-muted transition-colors"
+      className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+      aria-label="Toggle theme"
     >
-      {/* Light mode icon (sun) */}
       <Sun className="h-4 w-4 block dark:hidden" />
-
-      {/* Dark mode icon (moon) */}
       <Moon className="h-4 w-4 hidden dark:block" />
     </motion.button>
   )
