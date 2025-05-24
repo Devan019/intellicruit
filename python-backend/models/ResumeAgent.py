@@ -12,9 +12,8 @@ from langchain_groq import ChatGroq
 print("application import ChatGroq from langchain_groq ...")
 # from utils import resume_parser
 
-from unstructured.partition.pdf import partition_pdf
 
-os.environ["GROQ_API_KEY"] = "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"
+print("application import partition_pdf from unstructured.partition.pdf ...")
 
 def image_resume_parsing(pdf_path):
     from unstructured.partition.pdf import partition_pdf
@@ -158,10 +157,8 @@ Extract the following details:
 
     print(f"Processing resume: {resume_file_path}")
     result = chain.invoke({"resume_text": resume_text})
+    print(f"Resume processing result: {result}")
 
-    try:
-        return json.loads(result)
-    except json.JSONDecodeError:
-        return {"error": "Failed to parse resume JSON", "raw_output": result}
+    return result
 
 
