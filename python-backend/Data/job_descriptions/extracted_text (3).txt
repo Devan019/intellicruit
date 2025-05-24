@@ -1,0 +1,73 @@
+About the job
+Description
+
+The AOP (Analytics Operations and Programs) team is responsible for creating core analytics, insight generation and science capabilities for ROW Ops. We develop scalable analytics applications, AI/ML products and research models to optimize operation processes. You will work with Product Managers, Data Engineers, Data Scientists, Research Scientists, Applied Scientists and Business Intelligence Engineers using rigorous quantitative approaches to ensure high quality data/science products for our customers around the world.
+
+We are looking for a Sr.Data Scientist to join our growing Science Team. As Data Scientist, you are able to use a range of science methodologies to solve challenging business problems when the solution is unclear. You will be responsible for building ML models to solve complex business problems and test them in production environment. The scope of role includes defining the charter for the project and proposing solutions which align with org's priorities and production constraints but still create impact. You will achieve this by leveraging strong leadership and communication skills, data science skills and by acquiring domain knowledge pertaining to the delivery operations systems. You will provide ML thought leadership to technical and business leaders, and possess ability to think strategically about business, product, and technical challenges. You will also be expected to contribute to the science community by participating in science reviews and publishing in internal or external ML conferences.
+
+Our Team Solves a Broad Range Of Problems That Can Be Scaled Across ROW (Rest Of The World Including Countries Like India, Australia, Singapore, MENA And LATAM). Here Is a Glimpse Of The Problems That This Team Deals With On a Regular Basis
+
+ Using live package and truck signals to adjust truck capacities in real-time
+ HOTW models for Last Mile Channel Allocation
+ Using LLMs to automate analytical processes and insight generation
+ Ops research to optimize middle mile truck routes
+ Working with global partner science teams to affect Reinforcement Learning based pricing models and estimating Shipments Per Route for $MM savings
+ Deep Learning models to synthesize attributes of addresses
+ Abuse detection models to reduce network losses
+
+Key job responsibilities
+
+ Use machine learning and analytical techniques to create scalable solutions for business problems
+
+Analyze and extract relevant information from large amounts of Amazon’s historical business data to help automate and optimize key processes
+
+ Design, develop, evaluate and deploy, innovative and highly scalable ML/OR models
+ Work closely with other science and engineering teams to drive real-time model implementations
+ Work closely with Ops/Product partners to identify problems and propose machine learning solutions
+ Establish scalable, efficient, automated processes for large scale data analyses, model development, model validation and model maintenance
+ Work proactively with engineering teams and product managers to evangelize new algorithms and drive the implementation of large-scale complex ML models in production
+ Leading projects and mentoring other scientists, engineers in the use of ML techniques
+
+Basic Qualifications
+
+ 5+ years of data scientist experience
+ Experience with data scripting languages (e.g. SQL, Python, R etc.) or statistical/mathematical software (e.g. R, SAS, or Matlab)
+ Experience with statistical models e.g. multinomial logistic regression
+ Experience in data applications using large scale distributed systems (e.g., EMR, Spark, Elasticsearch, Hadoop, Pig, and Hive)
+ Experience working with data engineers and business intelligence engineers collaboratively
+ Demonstrated expertise in a wide range of ML techniques
+
+Preferred Qualifications
+
+ Experience as a leader and mentor on a data science team
+ Master's degree in a quantitative field such as statistics, mathematics, data science, business analytics, economics, finance, engineering, or computer science
+ Expertise in Reinforcement Learning and Gen AI is preferred
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how-we-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.
+
+
+Company - Amazon Development Centre (India) Private Limited - S55
+
+Job ID: A2974724
+
+
+
+Summary: 
+
+Design an eye-catching job poster that highlights the most important aspects of the Sr. Data Scientist.
+
+Incorporate a subtle background pattern related to the Analytics industry.
+
+Use a blue and white color theme.
+
+Use a two-column layout with the left side containing:
+
+- Job title: Sr. Data Scientist
+- Company name: Amazon Development Centre (India) Private Limited - S55
+- Location: India
+
+The right side lists:
+
+- Key qualifications: 5+ years of data scientist experience, experience with data scripting languages, statistical models, data applications using large scale distributed systems, and demonstrated expertise in a wide range of ML techniques
+- Benefits: Opportunities to work with global partner science teams, participate in science reviews, and publish in internal or external ML conferences, inclusive culture, and accommodations for disabilities
+
