@@ -41,7 +41,8 @@ const JobInsights = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:8000/job-analysis');
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const response = await fetch(`${API_URL}/job-analysis`);
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
