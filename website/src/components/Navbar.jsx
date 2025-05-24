@@ -8,6 +8,7 @@ import { SignInButton, SignUpButton } from "@clerk/nextjs"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { useTheme } from "next-themes"
+import { NavbarThemeToggle } from "./Theme-toggle"
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
@@ -116,9 +117,9 @@ export default function Navbar() {
               <Sun className="h-4 w-4 block dark:hidden" />
               <Moon className="h-4 w-4 hidden dark:block" />
             </motion.button>
-
-            {isLoaded &&
-              (isSignedIn ? (
+            
+            {isLoaded && (
+              isSignedIn ? (
                 <div className="flex items-center gap-4">
                   <UserButton
                     afterSignOutUrl="/"

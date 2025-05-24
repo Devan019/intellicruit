@@ -1,1 +1,0 @@
-# FAISS vector utility placeholder

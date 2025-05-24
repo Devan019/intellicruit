@@ -11,7 +11,10 @@ export function NavbarThemeToggle() {
     <motion.button
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
-      onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+      onClick={() => {
+        setTheme(theme === "light" ? "dark" : "light")
+        console.log(theme)
+      }}
       className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
       aria-label="Toggle theme"
     >

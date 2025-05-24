@@ -1,0 +1,27 @@
+[
+  {
+    "resume": "\n    Name: Anchal Kunchal\n    Skills: Java, JSP, Servlets, Angular, HTML, CSS, Jmeter, Postman, Hibernate, MySQL, Spring, Spring MVC, Spring Boot, REST APIs, Agile, Jira, Git, Apache JMeter, Postman, Eclipse/IntelliJ IDEA, VS Code, JavaScript\n    Experience: Full Stack Java Developer\n    Certifications: One Year Full Computer Course from Aptech Computer Education, Six Month Python Course from Excellence Technologies, Oops in Java Certification Course, Git and GitHub Course, Advance SQL Course, B",
+    "job_description": "About the job\nDescription\n\nThe AOP (Analytics Operations and Programs) team is responsible for creating core analytics, insight generation and science capabilities for ROW Ops. We develop scalable analytics applications, AI/ML products and research models to optimize operation processes. You will work with Product Managers, Data Engineers, Data Scientists, Research Scientists, Applied Scientists and Business Intelligence Engineers using rigorous quantitative approaches to ensure high quality dat",
+    "result": {
+      "scores": {
+        "technical_skills": 18,
+        "experience": 10,
+        "certifications": 10,
+        "projects": 10,
+        "soft_skills": 2
+      },
+      "total_score": 58,
+      "strengths_summary": "The candidate has a strong technical skill set, with a wide range of programming languages and tools listed. They also have a diverse set of certifications and projects that showcase their skills.",
+      "improvement_areas": [
+        "The candidate lacks experience in data science and machine learning, which is a key requirement for the Sr. Data Scientist role.",
+        "The candidate's projects do not demonstrate any data science or machine learning applications, which is a key requirement for the role.",
+        "The candidate's certifications are mostly focused on programming languages and tools, with no certifications in data science or machine learning."
+      ],
+      "suggestions": [
+        "The candidate should consider taking courses or getting certifications in data science and machine learning to be more competitive for the Sr. Data Scientist position.",
+        "The candidate should focus on building projects that demonstrate their skills in data science and machine learning.",
+        "The candidate should focus on building a stronger portfolio that showcases their skills in data science and machine learning."
+      ]
+    }
+  }
+]
