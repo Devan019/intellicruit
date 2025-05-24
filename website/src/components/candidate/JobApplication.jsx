@@ -12,6 +12,7 @@ export default function JobApplication({ jobId }) {
   const [currentStep, setCurrentStep] = useState(1)
   const [testResult, setTestResult] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [parsedResumeData, setparsedResumeData] = useState(false);
 
   // Mock job data
   const mockJob = {
@@ -224,7 +225,7 @@ export default function JobApplication({ jobId }) {
         )}
 
         {((currentStep === 2 && job.hasAptitudeTest) || (currentStep === 1 && !job.hasAptitudeTest)) && (
-          <ApplicationForm job={job} testResult={testResult} onSubmit={handleApplicationSubmit} />
+          <ApplicationForm job={job} testResult={testResult} onSubmit={handleApplicationSubmit} parsedResumeData={parsedResumeData} setparsedResumeData={setparsedResumeData} />
         )}
 
         {currentStep === (job.hasAptitudeTest ? 3 : 2) && (
