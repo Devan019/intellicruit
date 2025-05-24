@@ -6,7 +6,7 @@ Currently, this is the first official release of the project. The following vers
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.0.0   | ✅ Supported        |
+| 1.0.0   | ⚠️ UnderDevelopment      |
 
 ## Reporting a Vulnerability
 
