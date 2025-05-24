@@ -1,1 +1,0 @@
-# Interview scheduling utility placeholder
