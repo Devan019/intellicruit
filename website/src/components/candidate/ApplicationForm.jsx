@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Upload, X, FileText, CheckCircle, User, GraduationCap, Briefcase } from "lucide-react"
+import axios from "axios"
 
-export default function ApplicationForm({ job, testResult, onSubmit, parsedResumeData }) {
+export default function ApplicationForm({ job, testResult, onSubmit, parsedResumeData, setparsedResumeData }) {
   const [formData, setFormData] = useState({
     personalInfo: {
       firstName: "",
@@ -97,16 +98,16 @@ export default function ApplicationForm({ job, testResult, onSubmit, parsedResum
         ...prevData,
         personalInfo: {
           ...prevData.personalInfo,
-          firstName: parsedResumeData.personalInfo?.firstName || prevData.personalInfo.firstName,
-          lastName: parsedResumeData.personalInfo?.lastName || prevData.personalInfo.lastName,
-          email: parsedResumeData.personalInfo?.email || prevData.personalInfo.email,
-          phone: parsedResumeData.personalInfo?.phone || prevData.personalInfo.phone,
-          address: parsedResumeData.personalInfo?.address || prevData.personalInfo.address,
-          city: parsedResumeData.personalInfo?.city || prevData.personalInfo.city,
-          state: parsedResumeData.personalInfo?.state || prevData.personalInfo.state,
-          zipCode: parsedResumeData.personalInfo?.zipCode || prevData.personalInfo.zipCode,
-          linkedinUrl: parsedResumeData.personalInfo?.linkedinUrl || prevData.personalInfo.linkedinUrl,
-          portfolioUrl: parsedResumeData.personalInfo?.portfolioUrl || prevData.personalInfo.portfolioUrl,
+          firstName: parsedResumeData.name || prevData.personalInfo.firstName,
+          lastName: parsedResumeData.lastName || prevData.personalInfo.lastName,
+          email: parsedResumeData.email || prevData.personalInfo.email,
+          phone: parsedResumeData.contact_no || prevData.personalInfo.phone,
+          address: parsedResumeData.address || prevData.personalInfo.address,
+          city: parsedResumeData.city || prevData.personalInfo.city,
+          state: parsedResumeData.state || prevData.personalInfo.state,
+          zipCode: parsedResumeData.zipCode || prevData.personalInfo.zipCode,
+          linkedinUrl: parsedResumeData.linkedin_profile_link || prevData.personalInfo.linkedinUrl,
+          portfolioUrl: parsedResumeData.portfolioUrl || prevData.personalInfo.portfolioUrl,
         },
         skills: parsedResumeData.skills?.length ? parsedResumeData.skills : prevData.skills,
         education: parsedResumeData.education?.length ? parsedResumeData.education.map((edu, index) => ({
@@ -117,51 +118,54 @@ export default function ApplicationForm({ job, testResult, onSubmit, parsedResum
           graduationYear: edu.graduationYear || "",
           gpa: edu.gpa || "",
         })) : prevData.education,
-        experience: parsedResumeData.experience?.length ? parsedResumeData.experience.map((exp, index) => ({
-          id: exp.id || Date.now() + index,
-          company: exp.company || "",
-          position: exp.position || "",
-          startDate: exp.startDate || "",
-          endDate: exp.endDate || "",
-          current: exp.current || false,
-          description: exp.description || "",
-        })) : prevData.experience,
+        // experience: parsedResumeData.experience?.length ? parsedResumeData.experience.map((exp, index) => ({
+        //   id: exp.id || Date.now() + index,
+        //   company: exp.company || "",
+        //   position: exp.position || "",
+        //   startDate: exp.startDate || "",
+        //   endDate: exp.endDate || "",
+        //   current: exp.current || false,
+        //   description: exp.description || "",
+        // })) : prevData.experience,
       }))
     }
   }, [parsedResumeData])
 
   const handleFileUpload = async (file, type) => {
     if (type === "resume") {
-      setFormData((prev) => ({ ...prev, resume: file }))
+      setFormData((prev) => ({ ...prev, resume: file }));
+      setIsParsingResume(true);
+
+      // Prepare FormData
+      const formData = new FormData();
+      formData.append("resume_file", file); // this key must match FastAPI
       
-      // Start parsing process
-      setIsParsingResume(true)
-      
-      // Here you would typically call your backend API to parse the resume
-      // For now, we'll simulate the process
+
       try {
-        // Simulate API call delay
-        setTimeout(() => {
-          setIsParsingResume(false)
-          // The actual parsing would be handled by the parent component
-          // and passed down via parsedResumeData prop
-        }, 2000)
-        
-        // In real implementation, you might call something like:
-        // const parsedData = await parseResumeAPI(file)
-        // onResumeDataParsed(parsedData)
-        
+        const response = await axios.post(
+          `${process.env.NEXT_PUBLIC_FASTAPI_URI}/resume-agent`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+
+        const data = response.data;
+        setparsedResumeData(data)
+        setIsParsingResume(false);
       } catch (error) {
-        console.error('Error parsing resume:', error)
-        setIsParsingResume(false)
+        console.error("Upload failed:", error.response?.data || error.message);
       }
     } else if (type === "additional") {
       setFormData((prev) => ({
         ...prev,
         additionalDocuments: [...prev.additionalDocuments, file],
-      }))
+      }));
     }
-  }
+  };
+
 
   const removeFile = (type, index = null) => {
     if (type === "resume") {
@@ -312,7 +316,7 @@ export default function ApplicationForm({ job, testResult, onSubmit, parsedResum
         <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
         <p className="text-gray-600 dark:text-gray-400">Click to upload or drag and drop</p>
         <p className="text-sm text-gray-500 dark:text-gray-500">
-          {accept.includes("pdf") ? "PDF files only" : "PDF, DOC, DOCX files"}
+          {accept.includes(["pdf", "docx"]) ? "PDF files only" : "PDF, DOC, DOCX files"}
         </p>
       </label>
     </div>
@@ -363,11 +367,10 @@ export default function ApplicationForm({ job, testResult, onSubmit, parsedResum
             <button
               key={section.id}
               onClick={() => setCurrentSection(section.id)}
-              className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                currentSection === section.id
+              className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ${currentSection === section.id
                   ? "bg-blue-600 text-white"
                   : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-              }`}
+                }`}
             >
               <section.icon className="h-4 w-4 mr-2" />
               {section.title}
@@ -391,7 +394,7 @@ export default function ApplicationForm({ job, testResult, onSubmit, parsedResum
             {/* Resume Upload - Priority Section */}
             <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
               <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">
-                Resume * (PDF only) - Upload to auto-fill form
+                Resume * (PDF,DOCX only) - Upload to auto-fill form
               </label>
               {formData.resume ? (
                 <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
@@ -407,7 +410,7 @@ export default function ApplicationForm({ job, testResult, onSubmit, parsedResum
                   </button>
                 </div>
               ) : (
-                <FileUploadArea type="resume" accept=".pdf" />
+                <FileUploadArea type="resume" accept={[".pdf",".docx"]} />
               )}
             </div>
 
@@ -872,7 +875,7 @@ export default function ApplicationForm({ job, testResult, onSubmit, parsedResum
             {/* Availability */}
             <div className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
               <h4 className="font-medium text-gray-900 dark:text-white mb-4">Availability</h4>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">Earliest Start Date</label>
@@ -952,14 +955,14 @@ export default function ApplicationForm({ job, testResult, onSubmit, parsedResum
             {/* Additional Questions */}
             <div className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
               <h4 className="font-medium text-gray-900 dark:text-white mb-4">Additional Questions</h4>
-              
+
               {additionalQuestions.map((question) => (
                 <div key={question.id} className="mb-6">
                   <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">
                     {question.question}
                     {question.required && <span className="text-red-500 ml-1">*</span>}
                   </label>
-                  
+
                   {question.type === "textarea" && (
                     <textarea
                       rows={4}
@@ -974,7 +977,7 @@ export default function ApplicationForm({ job, testResult, onSubmit, parsedResum
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     />
                   )}
-                  
+
                   {question.type === "radio" && (
                     <div className="space-y-2">
                       {question.options.map((option) => (
@@ -1030,7 +1033,7 @@ export default function ApplicationForm({ job, testResult, onSubmit, parsedResum
             </button>
           )}
         </div>
-        
+
         <div className="text-sm text-gray-500 dark:text-gray-400">
           Step {currentSection + 1} of {sections.length}
         </div>
