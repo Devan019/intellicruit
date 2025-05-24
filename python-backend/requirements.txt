@@ -1,0 +1,13 @@
+langchain
+faiss-cpu
+mistralai
+python-dotenv
+unstructured[local-inference,pdf]
+sentence-transformers
+pymupdf
+pandas
+langchain-community>=0.0.30
+pyngrok
+uvicorn
+fastapi[standard]
+pydantic
