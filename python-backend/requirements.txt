@@ -11,3 +11,4 @@ pyngrok
 uvicorn
 fastapi[standard]
 pydantic
+langchain_groq
