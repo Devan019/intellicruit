@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { UserButton, useAuth } from '@clerk/nextjs'
-import { Menu, X, Bot, UserPlus, LogIn, Briefcase, Moon, Sun } from 'lucide-react'
+import { UserButton, useAuth } from "@clerk/nextjs"
+import { Menu, X, Bot, UserPlus, LogIn, Briefcase, Moon, Sun } from "lucide-react"
 import { SignInButton, SignUpButton } from "@clerk/nextjs"
-import { usePathname } from 'next/navigation'
-import Link from 'next/link'
+import { usePathname } from "next/navigation"
+import Link from "next/link"
 import { useTheme } from "next-themes"
 import { NavbarThemeToggle } from "./Theme-toggle"
 
@@ -21,20 +21,18 @@ export default function Navbar() {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10)
     }
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
   const navItems = [
     { name: "Home", href: "#home", type: "scroll" },
     { name: "Features", href: "#features", type: "scroll" },
+    { name: "Jobs", href: "/jobs", type: "link" },
     { name: "Contact", href: "#contact", type: "scroll" },
   ]
 
-  const authenticatedNavItems = [
-    ...navItems,
-    { name: "HR Dashboard", href: "/hr", type: "link", icon: Briefcase },
-  ]
+  const authenticatedNavItems = [...navItems, { name: "HR Dashboard", href: "/hr", type: "link", icon: Briefcase }]
 
   const scrollToSection = (href) => {
     const element = document.querySelector(href)
@@ -55,8 +53,8 @@ export default function Navbar() {
   const currentNavItems = isSignedIn ? authenticatedNavItems : navItems
 
   const headerClass = isScrolled
-    ? 'py-3 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-lg border-b border-gray-200 dark:border-gray-700'
-    : 'py-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm'
+    ? "py-3 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-lg border-b border-gray-200 dark:border-gray-700"
+    : "py-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm"
 
   return (
     <motion.nav
@@ -77,7 +75,7 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            {currentNavItems.map((item) => (
+            {currentNavItems.map((item) =>
               item.type === "link" ? (
                 <Link key={item.name} href={item.href}>
                   <motion.div
@@ -97,8 +95,8 @@ export default function Navbar() {
                 >
                   {item.name}
                 </motion.button>
-              )
-            ))}
+              ),
+            )}
           </div>
 
           {/* Auth Buttons & Theme Toggle */}
@@ -109,7 +107,16 @@ export default function Navbar() {
             className="hidden md:flex items-center gap-4"
           >
             {/* Theme Toggle */}
-            <NavbarThemeToggle />
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              aria-label="Toggle theme"
+            >
+              <Sun className="h-4 w-4 block dark:hidden" />
+              <Moon className="h-4 w-4 hidden dark:block" />
+            </motion.button>
             
             {isLoaded && (
               isSignedIn ? (
@@ -119,18 +126,20 @@ export default function Navbar() {
                     appearance={{
                       elements: {
                         userButtonAvatarBox: "h-9 w-9 border-2 border-blue-800 hover:border-blue-400",
-                      }
+                      },
                     }}
                   />
                 </div>
               ) : (
                 <div className="flex items-center gap-4">
-                  <Link href="/sign-in" className="bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md text-sm px-4 py-2 transition-colors">
+                  <Link
+                    href="/sign-in"
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md text-sm px-4 py-2 transition-colors"
+                  >
                     Sign in
                   </Link>
                 </div>
-              )
-            )}
+              ))}
           </motion.div>
 
           {/* Mobile menu button */}
@@ -146,7 +155,7 @@ export default function Navbar() {
               <Sun className="h-4 w-4 block dark:hidden" />
               <Moon className="h-4 w-4 hidden dark:block" />
             </motion.button>
-            
+
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={() => setIsOpen(!isOpen)}
@@ -169,7 +178,7 @@ export default function Navbar() {
             className="md:hidden bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700"
           >
             <div className="px-4 py-4 space-y-4">
-              {currentNavItems.map((item) => (
+              {currentNavItems.map((item) =>
                 item.type === "link" ? (
                   <Link key={item.name} href={item.href}>
                     <motion.div
@@ -190,9 +199,9 @@ export default function Navbar() {
                   >
                     {item.name}
                   </motion.button>
-                )
-              ))}
-              
+                ),
+              )}
+
               {isLoaded && !isSignedIn && (
                 <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
                   <SignInButton mode="modal">
@@ -224,7 +233,7 @@ export default function Navbar() {
                     appearance={{
                       elements: {
                         userButtonAvatarBox: "h-9 w-9 border-2 border-blue-800 hover:border-blue-400",
-                      }
+                      },
                     }}
                   />
                 </div>

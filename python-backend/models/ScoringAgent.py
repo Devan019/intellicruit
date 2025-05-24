@@ -6,9 +6,8 @@ from langchain.tools import tool
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_groq import ChatGroq
-from ResumeAgent import resume_agent
+from .ResumeAgent import resume_agent
 
-os.environ["GROQ_API_KEY"] = "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"
 
 # Set up LLM
 llm = ChatGroq(

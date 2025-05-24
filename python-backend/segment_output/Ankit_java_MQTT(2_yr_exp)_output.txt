@@ -1,0 +1,68 @@
+7689035065
+005ankitverma@gmail.com
+www.reallygreatsite.com
+Sanjay nagar , sector 23, Ghaziabad
+C O N T A C T
+S K I L L S
+E D U C A T I O N
+W O R K  E X P E R I E N C E
+Programming Languages: Core Java , J2EE, SQL 
+FrameWorks: Spring MVC, Spring Boot , JPA Hibernate,
+Web Technologies:  HTML ,CSS , JavaScript-basicWeb Technologies:  HTML ,CSS
+ , JavaScript-basicDatabase-:   Postgre
+SQL and MySQL
+Others : Microservices -basic, MQTT protocols
+c
+      
+Bachelor of Technology
+Dr APJ Abdul Kalam Technical University
+, Lucknow 
+2019-2023
+Computer Science And Engineering
+7.58 CGPA
+Intermediate           83%
+Maharshi Dayanand Inter College
+ , Mau , Up    2015-16
+Java Developer   
+A.N.R. Software Pvt Ltd.                                                            Sep 2022-Present.
+eResturent
+Work with MVC Architecture, writing modules from scratch and developing REST
+ APIs. I am also involve in modifying business logic and managing position code
+-based migrations.
+Revamped the codebase in existing application to improve maintainability and
+ scalability. Cut down on bug resolution time by 35% and increased code reusabilit
+y by 50%.
+Conducted comprehensive testing using JUnit, identifying and resolving issues
+ promptly to meet project requirements.
+ Achieved a 70-80% reduction in load by leveraging advanced data structures,
+ Java  Collections  framework,  and  Redis  for  efficient  caching  and  dat
+a management.
+Take ownership of production bug fixes and also  responsible for restructuring of
+ existing functionalities in the backend .
+Applied various design patterns (e.g., Singleton) and advanced multithreading
+ techniques to optimize application performance.
+Optimised SQL queries and reduced respones time of critical APIs by 30%.
+A C H I E V E M E N T S
+Solve 115+ Questions on LEETCODE
+Secure 489 rank in Job- A -Thon 2022
+A N K I T  V E R M A
+J A V A  D E V E L O P E R
+College PROJECT
+Library Management System[Github]
+I build this project using Spring Boot .
+In this project we manage the Student ,Book and Transaction in
+ DB.
+Create Controller to handle add student request and other
+ request .
+Create three Package Controller ,Service and Repostiry .
+Write unit test by using JUnit  and mock object using mockito .
+Use multilpe annotation like @RestController , Autowired
+       , @Table and many more .
+User send request using Postman Tool .
+We also imporve performance this project using Redis .
+We Secure Rest APIs by using Spring Security.
+Tech Stack -:
+Spring Boot , Java 8, Redis , Spring Security .
+Tools
+Maven ,Postman.
+

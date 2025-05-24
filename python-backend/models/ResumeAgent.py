@@ -1,16 +1,22 @@
 import os
+print("application import os ...")
 import json
+print("application import json ...")
 from langchain.tools import tool
+print("application import tool from langchain.tools ...")
 from langchain_core.prompts import PromptTemplate
+print("application import PromptTemplate from langchain_core.prompts ...")
 from langchain_core.output_parsers import StrOutputParser
+print("application import StrOutputParser from langchain_core.output_parsers ...")
 from langchain_groq import ChatGroq
+print("application import ChatGroq from langchain_groq ...")
 # from utils import resume_parser
 
-from unstructured.partition.pdf import partition_pdf
 
-os.environ["GROQ_API_KEY"] = "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"
+print("application import partition_pdf from unstructured.partition.pdf ...")
 
 def image_resume_parsing(pdf_path):
+    from unstructured.partition.pdf import partition_pdf
     elements = partition_pdf(
         filename=pdf_path,
         extract_images_in_pdf=True,
@@ -40,12 +46,10 @@ def image_resume_parsing(pdf_path):
 
 
 
-from sentence_transformers import SentenceTransformer, util
 
 import fitz  # PyMuPDF
 import os
-import re
-import pandas as pd
+
 
 OUTPUT_FOLDER = "segment_output"
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
@@ -120,6 +124,8 @@ def resume_agent(resume_file_path: str) -> dict:
 
     if not resume_text:
         return {"error": "No text extracted from resume."}
+    
+    print(f"Extracted resume text length: {len(resume_text)} characters")
 
     prompt_template = PromptTemplate.from_template("""
 You are an expert at extracting structured JSON from resumes.
@@ -146,12 +152,13 @@ Extract the following details:
 """)
 
 
+    print(f"Using resume text:\n{resume_text[:500]}...")  # Log first 500 chars for debugging
     chain = prompt_template | llm | StrOutputParser()
-    result = chain.invoke({"resume_text": resume_text})
 
-    try:
-        return json.loads(result)
-    except json.JSONDecodeError:
-        return {"error": "Failed to parse resume JSON", "raw_output": result}
+    print(f"Processing resume: {resume_file_path}")
+    result = chain.invoke({"resume_text": resume_text})
+    print(f"Resume processing result: {result}")
+
+    return result
 
 
