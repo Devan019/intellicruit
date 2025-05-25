@@ -16,7 +16,7 @@ from langchain.schema import HumanMessage
 import ast
 
 # === CONFIG ===
-os.environ["GROQ_API_KEY"] = "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"
+os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
 llm = ChatGroq(model_name="llama3-70b-8192", api_key=os.environ["GROQ_API_KEY"])
 
 # Load Whisper model ONCE (avoid reloading inside loops)
