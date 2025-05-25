@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { UserButton, useAuth } from "@clerk/nextjs"
+import { UserButton, useAuth, useUser } from "@clerk/nextjs"
 import { Menu, X, Bot, UserPlus, LogIn, Briefcase, Moon, Sun, User } from "lucide-react"
 import { SignInButton, SignUpButton } from "@clerk/nextjs"
 import { usePathname } from "next/navigation"
@@ -12,6 +12,7 @@ import axios from "axios"
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
+  const { user } = useUser();
   const [isScrolled, setIsScrolled] = useState(false)
   const [userRole, setUserRole] = useState(null)
   const [roleLoading, setRoleLoading] = useState(true)
@@ -29,25 +30,12 @@ export default function Navbar() {
 
   // Fetch user role when signed in
   useEffect(() => {
-    const fetchUserRole = async () => {
-      if (isSignedIn && isLoaded) {
-        try {
-          const response = await axios.get('/api/get-role')
-          setUserRole(response.data.role)
-        } catch (err) {
-          console.error('Error fetching user role:', err)
-          setUserRole(null)
-        } finally {
-          setRoleLoading(false)
-        }
-      } else {
-        setUserRole(null)
-        setRoleLoading(false)
-      }
+    setRoleLoading(true);
+    if (isLoaded && user) {
+      setUserRole(user.publicMetadata?.role || "USER");
     }
-
-    fetchUserRole()
-  }, [isSignedIn, isLoaded])
+    setRoleLoading(false);
+  }, [isSignedIn, isLoaded, user]) // Added user to dependency array
 
   const baseNavItems = [
     { name: "Home", href: "/", type: "link" },
@@ -59,17 +47,17 @@ export default function Navbar() {
   const getNavItems = () => {
     if (!isSignedIn || roleLoading) {
       // Show default navigation for non-signed-in users
-      return [...baseNavItems, { name: "Candidate", href: "/candidate", type: "link" }]
+      return [...baseNavItems]
     }
-    
+
     if (userRole === 'HR') {
       return [...baseNavItems, { name: "HR Dashboard", href: "/hr", type: "link", icon: Briefcase }]
     } else if (userRole === 'Candidate') {
       return [...baseNavItems, { name: "Candidate", href: "/candidate", type: "link", icon: User }]
     }
-    
+
     // Fallback for unknown roles
-    return [...baseNavItems, { name: "Candidate", href: "/candidate", type: "link" }]
+    return [...baseNavItems]
   }
 
   const scrollToSection = (href) => {
@@ -155,7 +143,7 @@ export default function Navbar() {
               <Sun className="h-4 w-4 block dark:hidden" />
               <Moon className="h-4 w-4 hidden dark:block" />
             </motion.button>
-            
+
             {isLoaded && (
               isSignedIn ? (
                 <div className="flex items-center gap-4">
@@ -164,11 +152,10 @@ export default function Navbar() {
                     <motion.div
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        userRole === 'HR' 
-                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
-                          : 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
-                      }`}
+                      className={`px-2 py-1 text-xs font-medium rounded-full ${userRole === 'HR'
+                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
+                        : 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                        }`}
                     >
                       {userRole}
                     </motion.div>
@@ -237,11 +224,10 @@ export default function Navbar() {
                   animate={{ opacity: 1, x: 0 }}
                   className="flex justify-center"
                 >
-                  <div className={`px-3 py-1 text-sm font-medium rounded-full ${
-                    userRole === 'HR' 
-                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
-                      : 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
-                  }`}>
+                  <div className={`px-3 py-1 text-sm font-medium rounded-full ${userRole === 'HR'
+                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
+                    : 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                    }`}>
                     {userRole === 'HR' ? 'HR Dashboard Access' : 'Candidate Portal Access'}
                   </div>
                 </motion.div>

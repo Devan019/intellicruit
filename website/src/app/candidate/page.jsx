@@ -1,11 +1,14 @@
 "use client";
 import CandidateDashboard from "@/components/CandidateDashboard";
 import WithRoleCheck from "@/components/WithRoleCheck";
+import CandidateAccess from "@/components/hoc/CandidateAccess";
 
 export default function JobsPage() {
   return (
-    <WithRoleCheck requiredRole={["Candidate"]}>
+    <CandidateAccess>
+    <WithRoleCheck requiredRole={["HR","Candidate"]}>
       <CandidateDashboard />
     </WithRoleCheck>
+    </CandidateAccess>
   );
 }
