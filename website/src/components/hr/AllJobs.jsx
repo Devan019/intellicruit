@@ -4,8 +4,6 @@ import { motion } from 'framer-motion';
 import { useTheme } from 'next-themes';
 import { Edit, Trash2, Eye, MoreVertical } from 'lucide-react';
 import Link from 'next/link';
-import { useAuth } from '@clerk/nextjs';
-import { useRouter } from 'next/navigation';
 
 const JobListings = () => {
   const [jobs, setJobs] = useState([]);
@@ -13,7 +11,6 @@ const JobListings = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [userRole, setUserRole] = useState(null);
-  const {userId} = useAuth();
   const [filters, setFilters] = useState({
     status: 'all',
     department: 'all',
@@ -24,7 +21,6 @@ const JobListings = () => {
   const [actionMenuOpen, setActionMenuOpen] = useState(null);
   const [editingJob, setEditingJob] = useState(null);
   const { theme } = useTheme();
-  const router = useRouter();
 
   // Get user role
   useEffect(() => {
@@ -44,10 +40,9 @@ const JobListings = () => {
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const response = await axios.get(`/api/job/user/${userId}`);
-        // console.log('Fetched jobs:', response.data);
-        setJobDepartments([...new Set(response.data.jobs.map(job => job.department))]);
-        setJobs(response.data.jobs);
+        const response = await axios.get('/api/job');
+        setJobDepartments([...new Set(response.data.map(job => job.department))]);
+        setJobs(response.data);
         setLoading(false);
       } catch (err) {
         setError(err.message);
@@ -256,7 +251,7 @@ const JobListings = () => {
                           ? 'bg-red-900/50 text-red-300'
                           : 'bg-red-100 text-red-800'
                     }`}>
-                      {job?.status?.charAt(0).toUpperCase() + job?.status?.slice(1)}
+                      {job.status?.charAt(0).toUpperCase() + job.status?.slice(1)}
                     </span>
                   </div>
                 </div>
@@ -336,13 +331,9 @@ const JobListings = () => {
               
               <div className="flex justify-between items-center">
                 <div>
-                 <button 
-                   onClick={() => {
-                      router.push(`/receiveApplications/${job._id}`);
-                   }}
-                   className='px-4 py-2 rounded-lg border hover:bg-gray-100 dark:hover:bg-gray-700'>
-                   View Applications
-                 </button>
+                  <span className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {job.applicationCount || job.applicants || 0} applicants
+                  </span>
                 </div>
                 <div className="flex gap-2">
                   {/* View Details Button for all users */}

@@ -1,11 +1,14 @@
 import HRDashboard from "../../components/hr/HRDashboard"
-import WithRoleCheck from "../../components/WithRoleCheck";
+import WithRoleCheck from "@/components/WithRoleCheck";
+import HrAccess from "@/components/hoc/HrAccess";
 
 
 export default function HRPage() {
   return (
-    <WithRoleCheck requiredRole={["HR"]}>
-      <HRDashboard />
-    </WithRoleCheck>
+    <HrAccess>
+      <WithRoleCheck requiredRole={["HR", "Candidate"]}>
+        <HRDashboard />
+      </WithRoleCheck>
+    </HrAccess>
   )
 }

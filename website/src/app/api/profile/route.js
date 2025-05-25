@@ -57,7 +57,7 @@ export async function PUT(req) {
     }
 
     const body = await req.json();
-    console.log("Request body:", body);
+    // console.log("Request body:", body);
     // Basic validation
     if (!body.firstName || !body.lastName) {
       return NextResponse.json(

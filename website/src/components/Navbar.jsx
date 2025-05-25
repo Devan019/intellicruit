@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { UserButton, useAuth } from "@clerk/nextjs"
+import { UserButton, useAuth, useUser } from "@clerk/nextjs"
 import { Menu, X, Bot, UserPlus, LogIn, Briefcase, Moon, Sun, User } from "lucide-react"
 import { SignInButton, SignUpButton } from "@clerk/nextjs"
 import { usePathname } from "next/navigation"
@@ -12,6 +12,7 @@ import axios from "axios"
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
+  const { user } = useUser();
   const [isScrolled, setIsScrolled] = useState(false)
   const [userRole, setUserRole] = useState(null)
   const [roleLoading, setRoleLoading] = useState(true)
@@ -61,7 +62,8 @@ export default function Navbar() {
       // Show default navigation for non-signed-in users
       return [...baseNavItems, { name: "Candidate", href: "/candidate", type: "link" }]
     }
-    
+
+
     if (userRole === 'HR') {
       return [...baseNavItems, { name: "HR Dashboard", href: "/hr", type: "link", icon: Briefcase }]
     } else if (userRole === 'Candidate') {
@@ -70,6 +72,7 @@ export default function Navbar() {
     
     // Fallback for unknown roles
     return [...baseNavItems, { name: "Candidate", href: "/candidate", type: "link" }]
+
   }
 
   const scrollToSection = (href) => {
@@ -156,6 +159,7 @@ export default function Navbar() {
               <Moon className="h-4 w-4 hidden dark:block" />
             </motion.button>
             
+
             {isLoaded && (
               isSignedIn ? (
                 <div className="flex items-center gap-4">
@@ -169,6 +173,7 @@ export default function Navbar() {
                           ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
                           : 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
                       }`}
+                      
                     >
                       {userRole}
                     </motion.div>
@@ -237,11 +242,10 @@ export default function Navbar() {
                   animate={{ opacity: 1, x: 0 }}
                   className="flex justify-center"
                 >
-                  <div className={`px-3 py-1 text-sm font-medium rounded-full ${
-                    userRole === 'HR' 
-                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
-                      : 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
-                  }`}>
+                  <div className={`px-3 py-1 text-sm font-medium rounded-full ${userRole === 'HR'
+                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
+                    : 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                    }`}>
                     {userRole === 'HR' ? 'HR Dashboard Access' : 'Candidate Portal Access'}
                   </div>
                 </motion.div>

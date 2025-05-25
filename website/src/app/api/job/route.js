@@ -1,47 +1,16 @@
 import { NextResponse } from 'next/server';
-import { connectToDB } from '@/lib/mongodb'; // Your MongoDB connection util
-import { JobPosting } from '@/models/Job';
-import UserModel from '@/models/User';
+import {connectToDB} from '@/lib/mongodb'; // Your MongoDB connection util
+import {JobPosting} from '@/models/Job';
+
 export async function POST(req) {
   try {
     await connectToDB(); // Ensure DB is connected
 
-
-    let body = await req.json();
-
-
-    let clerk_id = body.clerk_id || null; // Assuming you have clerk_id from session or context
-    if (!clerk_id) {
-      const createdBy = body.createdBy || null; // Assuming you have user ID from session or context
-
-      if (!createdBy) {
-        return NextResponse.json(
-          { error: 'CreatedBy field is required' },
-          { status: 400 }
-        );
-      } else {
-
-        const user = await UserModel.findById(createdBy);
-        if (!user) {
-          return NextResponse.json(
-            { error: 'User not found' },
-            { status: 404 }
-          );
-        }
-
-        body.createdBy = user._id;
-      }
-    } else {
-      const user = await UserModel.findOne({ clerk_id: clerk_id });
-      body.createdBy = user._id;
-    }
-
-
-
-
+    const body = await req.json();
+    
     const jobPosting = new JobPosting({
-      title: body.jobDescription.title,
-      department: body.jobDescription.department,
+      title : body.jobDescription.title,
+      department: body.jobDescription.department, 
       location: body.jobDescription.location,
       jobType: body.jobDescription.jobType || 'full-time',
       experienceLevel: body.jobDescription.experienceLevel || 'entry',
@@ -57,12 +26,12 @@ export async function POST(req) {
       applicationDeadline: body.jobDescription.applicationDeadline ? new Date(body.jobDescription.applicationDeadline) : null,
       aptitudeTest: body.aptitudeTest || null,
       settings: {
-        enableAptitudeTest : body.settings.enableAptitudeTest || false,
-        enableResumeScreening: body.settings.enableResumeScreening || false,
-        autoScreening: body.settings.autoScreening || false,
-        maxApplications: body.settings.maxApplications || 100,
-        emailNotifications: body.settings.emailNotifications || true,
-        publishImmediately: body.settings.publishImmediately || true
+        allowApplications: body.settings?.allowApplications || true,
+        allowResumeUpload: body.settings?.allowResumeUpload || true,
+        allowCoverLetter: body.settings?.allowCoverLetter || true,
+        allowPortfolio: body.settings?.allowPortfolio || false,
+        allowReferences: body.settings?.allowReferences || false,
+        allowAptitudeTest: body.settings?.allowAptitudeTest || false
       },
       company: body.company || 'Default Company',
       status: body.status || 'draft',
