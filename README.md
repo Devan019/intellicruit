@@ -149,19 +149,6 @@ Advanced analytics platform providing market trends, salary insights, and career
 - Industry growth trends
 - Personalized career recommendations
 
-## 🚀 Deployment
-
-### Frontend (Vercel)
-```bash
-npm run build
-vercel deploy
-```
-
-### Backend (Production)
-```bash
-uvicorn main:app --host 0.0.0.0 --port 8000
-```
-
 ## 🤝 Contributing
 
 1. Fork the repository
