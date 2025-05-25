@@ -9,6 +9,9 @@ from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import re
 import socket
+import time
+import random
+import datetime
 from fastapi import FastAPI, UploadFile, File, Body
 from fastapi.responses import JSONResponse
 from fastapi import FastAPI, UploadFile, File,Form, HTTPException
@@ -29,7 +32,14 @@ import uvicorn
 from pydantic import BaseModel
 from utils.extractions import extract_text_from_pdf, extract_text_from_image, extract_skills_from_resume
 from typing import List, Dict, Optional
-
+from models.mock_interview import (
+    generate_questions_groq, 
+    transcribe_audio_whisper, 
+    validate_answer_with_llm,
+    analyze_video, 
+    analyze_audio, 
+    compute_final_score
+)
 
 
 course_df = pd.read_csv("./data/csvs/coursera_skill_clusters.csv")
@@ -433,6 +443,10 @@ async def root():
             "recommend_jobs": "/recommend-jobs",
             "verify_certificate": "/verify-certificate",
             "suggest_career": "/suggest-career",
+            "mock_interview_start": "/mock-interview/start",
+            "mock_interview_submit": "/mock-interview/submit-answer",
+            "mock_interview_results": "/mock-interview/session/{session_id}",
+            "mock_interview_analyze": "/mock-interview/analyze-files"
         }
     }
 
@@ -673,8 +687,285 @@ def recommend_roles(user_input: SkillInput):
     df_roles_sorted = df_roles.sort_values(by="match_score", ascending=False).reset_index(drop=True)
     top_roles = df_roles_sorted.head(5).to_dict(orient="records")
 
+class MockInterviewStart(BaseModel):
+    job_description: str
+    num_questions: int = 2
+
+class MockInterviewQuestion(BaseModel):
+    questions: List[str]
+    session_id: str
+
+class MockInterviewAnswer(BaseModel):
+    session_id: str
+    question_index: int
+    question: str
+
+class MockInterviewResult(BaseModel):
+    transcription: str
+    feedback: str
+    video_analysis: Dict[str, float]
+    audio_analysis: Dict[str, float]
+    scores: Dict[str, float]
+
+# Mock Interview Endpoints
+@app.post("/mock-interview/start", response_model=MockInterviewQuestion)
+async def start_mock_interview(request: MockInterviewStart):
+    """
+    Start a mock interview session by generating questions from job description
+    """
+    try:
+        # Generate questions using the existing function
+        questions = generate_questions_groq(request.job_description, n=request.num_questions)
+        
+        # Generate a unique session ID
+        session_id = f"session_{int(time.time())}_{random.randint(1000, 9999)}"
+        
+        # Store session data (you might want to use a database or cache in production)
+        session_data = {
+            "questions": questions,
+            "job_description": request.job_description,
+            "current_question": 0,
+            "answers": []
+        }
+        
+        # For now, we'll store in a simple dict (consider using Redis or database)
+        if not hasattr(app.state, 'mock_sessions'):
+            app.state.mock_sessions = {}
+        app.state.mock_sessions[session_id] = session_data
+        
+        return MockInterviewQuestion(
+            questions=questions,
+            session_id=session_id
+        )
+        
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to start mock interview: {str(e)}"}
+        )
+
+@app.post("/mock-interview/submit-answer")
+async def submit_answer(
+    session_id: str = Form(...),
+    question_index: int = Form(...),
+    question: str = Form(...),
+    audio_file: UploadFile = File(...),
+    video_file: UploadFile = File(...)
+):
+    """
+    Submit audio and video answer for a specific question
+    """
+    audio_path = None
+    video_path = None
+    
+    try:
+        # Check if session exists
+        if not hasattr(app.state, 'mock_sessions') or session_id not in app.state.mock_sessions:
+            return JSONResponse(
+                status_code=404,
+                content={"error": "Session not found"}
+            )
+        
+        # Create temporary directory for this answer
+        answer_dir = f"answers/{session_id}"
+        os.makedirs(answer_dir, exist_ok=True)
+        
+        # Save uploaded files
+        audio_path = f"{answer_dir}/answer_{question_index}_audio.wav"
+        video_path = f"{answer_dir}/answer_{question_index}_video.avi"
+        
+        with open(audio_path, "wb") as audio_buffer:
+            shutil.copyfileobj(audio_file.file, audio_buffer)
+            
+        with open(video_path, "wb") as video_buffer:
+            shutil.copyfileobj(video_file.file, video_buffer)
+        
+        # Process the answer
+        # 1. Transcribe audio
+        transcribed_text = transcribe_audio_whisper(audio_path)
+        
+        # 2. Get LLM feedback
+        feedback = validate_answer_with_llm(question, transcribed_text)
+        
+        # 3. Analyze video and audio
+        video_results = analyze_video(video_path)
+        audio_results = analyze_audio(audio_path)
+        
+        # 4. Compute scores
+        scores = compute_final_score(video_results, audio_results)
+        
+        # Store answer in session
+        answer_data = {
+            "question": question,
+            "transcription": transcribed_text,
+            "feedback": feedback,
+            "video_analysis": video_results,
+            "audio_analysis": audio_results,
+            "scores": scores,
+            "timestamp": datetime.datetime.now().isoformat()
+        }
+        
+        app.state.mock_sessions[session_id]["answers"].append(answer_data)
+        
+        return {
+            "transcription": transcribed_text,
+            "feedback": feedback,
+            "video_analysis": video_results,
+            "audio_analysis": audio_results,
+            "scores": scores,
+            "status": "success"
+        }
+        
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to process answer: {str(e)}"}
+        )
+    finally:
+        # Clean up temporary files
+        try:
+            if audio_path and os.path.exists(audio_path):
+                os.remove(audio_path)
+            if video_path and os.path.exists(video_path):
+                os.remove(video_path)
+        except:
+            pass
+
+@app.get("/mock-interview/session/{session_id}")
+async def get_session_results(session_id: str):
+    """
+    Get complete results for a mock interview session
+    """
+    try:
+        if not hasattr(app.state, 'mock_sessions') or session_id not in app.state.mock_sessions:
+            return JSONResponse(
+                status_code=404,
+                content={"error": "Session not found"}
+            )
+        
+        session_data = app.state.mock_sessions[session_id]
+        
+        # Calculate overall session statistics
+        if session_data["answers"]:
+            total_questions = len(session_data["questions"])
+            answered_questions = len(session_data["answers"])
+            
+            # Calculate average scores
+            avg_video_score = sum(answer["scores"]["video_score"] for answer in session_data["answers"]) / answered_questions
+            avg_audio_score = sum(answer["scores"]["audio_fluency_score"] for answer in session_data["answers"]) / answered_questions
+            avg_final_score = sum(answer["scores"]["final_score_out_of_5"] for answer in session_data["answers"]) / answered_questions
+            
+            overall_stats = {
+                "total_questions": total_questions,
+                "answered_questions": answered_questions,
+                "completion_rate": (answered_questions / total_questions) * 100,
+                "average_video_score": round(avg_video_score, 2),
+                "average_audio_score": round(avg_audio_score, 2),
+                "average_final_score": round(avg_final_score, 2)
+            }
+        else:
+            overall_stats = {
+                "total_questions": len(session_data["questions"]),
+                "answered_questions": 0,
+                "completion_rate": 0,
+                "average_video_score": 0,
+                "average_audio_score": 0,
+                "average_final_score": 0
+            }
+        
+        return {
+            "session_id": session_id,
+            "questions": session_data["questions"],
+            "answers": session_data["answers"],
+            "overall_stats": overall_stats,
+            "job_description": session_data["job_description"]
+        }
+        
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to get session results: {str(e)}"}
+        )
+
+@app.delete("/mock-interview/session/{session_id}")
+async def delete_session(session_id: str):
+    """
+    Delete a mock interview session and clean up associated files
+    """
+    try:
+        if hasattr(app.state, 'mock_sessions') and session_id in app.state.mock_sessions:
+            del app.state.mock_sessions[session_id]
+        
+        # Clean up answer directory
+        answer_dir = f"answers/{session_id}"
+        if os.path.exists(answer_dir):
+            shutil.rmtree(answer_dir)
+        
+        return {"message": "Session deleted successfully"}
+        
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to delete session: {str(e)}"}
+        )
+
+@app.post("/mock-interview/analyze-files")
+async def analyze_uploaded_files(
+    question: str = Form(...),
+    audio_file: UploadFile = File(...),
+    video_file: UploadFile = File(...)
+):
+    """
+    Standalone endpoint to analyze uploaded audio/video files without session management
+    """
+    audio_path = None
+    video_path = None
+    
+    try:
+        # Create temporary files
+        audio_suffix = os.path.splitext(audio_file.filename)[-1]
+        video_suffix = os.path.splitext(video_file.filename)[-1]
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix=audio_suffix) as audio_tmp:
+            shutil.copyfileobj(audio_file.file, audio_tmp)
+            audio_path = audio_tmp.name
+            
+        with tempfile.NamedTemporaryFile(delete=False, suffix=video_suffix) as video_tmp:
+            shutil.copyfileobj(video_file.file, video_tmp)
+            video_path = video_tmp.name
+        
+        # Process the files
+        transcribed_text = transcribe_audio_whisper(audio_path)
+        feedback = validate_answer_with_llm(question, transcribed_text)
+        video_results = analyze_video(video_path)
+        audio_results = analyze_audio(audio_path)
+        scores = compute_final_score(video_results, audio_results)
+        
+        return {
+            "transcription": transcribed_text,
+            "feedback": feedback,
+            "video_analysis": video_results,
+            "audio_analysis": audio_results,
+            "scores": scores
+        }
+        
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to analyze files: {str(e)}"}
+        )
+    finally:
+        # Clean up temporary files
+        try:
+            if audio_path and os.path.exists(audio_path):
+                os.unlink(audio_path)
+            if video_path and os.path.exists(video_path):
+                os.unlink(video_path)
+        except:
+            pass
+
     return {"recommended_roles": top_roles}
-# ngrok.set_auth_token("2xVJEPtRoeIWmpNPfnG5u1PjLk3_5iW4mZrUSjkDV42YM3Lfe")
+# ngrok.set_auth_token("2rG09L0V1BME0VvZHKdsrKjtFHR_2ZvkN5sJHSkMscctvUBLE")
 # public_url = ngrok.connect(8000)
 # print(f"🔗 Public URL: {public_url}")
 # uvicorn.run(app, host="0.0.0.0", port=8000)
