@@ -3,16 +3,18 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { UserButton, useAuth } from "@clerk/nextjs"
-import { Menu, X, Bot, UserPlus, LogIn, Briefcase, Moon, Sun } from "lucide-react"
+import { Menu, X, Bot, UserPlus, LogIn, Briefcase, Moon, Sun, User } from "lucide-react"
 import { SignInButton, SignUpButton } from "@clerk/nextjs"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { useTheme } from "next-themes"
-import { NavbarThemeToggle } from "./Theme-toggle"
+import axios from "axios"
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
+  const [userRole, setUserRole] = useState(null)
+  const [roleLoading, setRoleLoading] = useState(true)
   const pathname = usePathname()
   const { isSignedIn, isLoaded } = useAuth()
   const { theme, setTheme } = useTheme()
@@ -25,14 +27,50 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  const navItems = [
-    { name: "Home", href: "#home", type: "scroll" },
-    { name: "Features", href: "#features", type: "scroll" },
-    { name: "Candiadte", href: "/candidate", type: "link" },
-    { name: "Contact", href: "#contact", type: "scroll" },
+  // Fetch user role when signed in
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (isSignedIn && isLoaded) {
+        try {
+          const response = await axios.get('/api/get-role')
+          setUserRole(response.data.role)
+        } catch (err) {
+          console.error('Error fetching user role:', err)
+          setUserRole(null)
+        } finally {
+          setRoleLoading(false)
+        }
+      } else {
+        setUserRole(null)
+        setRoleLoading(false)
+      }
+    }
+
+    fetchUserRole()
+  }, [isSignedIn, isLoaded])
+
+  const baseNavItems = [
+    { name: "Home", href: "/", type: "link" },
+    { name: "Features", href: "/#features", type: "link" },
+    { name: "Contact", href: "/#contact", type: "link" },
   ]
 
-  const authenticatedNavItems = [...navItems, { name: "HR Dashboard", href: "/hr", type: "link", icon: Briefcase }]
+  // Add role-specific navigation items
+  const getNavItems = () => {
+    if (!isSignedIn || roleLoading) {
+      // Show default navigation for non-signed-in users
+      return [...baseNavItems, { name: "Candidate", href: "/candidate", type: "link" }]
+    }
+    
+    if (userRole === 'HR') {
+      return [...baseNavItems, { name: "HR Dashboard", href: "/hr", type: "link", icon: Briefcase }]
+    } else if (userRole === 'Candidate') {
+      return [...baseNavItems, { name: "Candidate", href: "/candidate", type: "link", icon: User }]
+    }
+    
+    // Fallback for unknown roles
+    return [...baseNavItems, { name: "Candidate", href: "/candidate", type: "link" }]
+  }
 
   const scrollToSection = (href) => {
     const element = document.querySelector(href)
@@ -50,7 +88,7 @@ export default function Navbar() {
     }
   }
 
-  const currentNavItems = isSignedIn ? authenticatedNavItems : navItems
+  const currentNavItems = getNavItems()
 
   const headerClass = isScrolled
     ? "py-3 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-lg border-b border-gray-200 dark:border-gray-700"
@@ -121,6 +159,20 @@ export default function Navbar() {
             {isLoaded && (
               isSignedIn ? (
                 <div className="flex items-center gap-4">
+                  {/* Show role badge for signed-in users */}
+                  {!roleLoading && userRole && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        userRole === 'HR' 
+                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
+                          : 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                      }`}
+                    >
+                      {userRole}
+                    </motion.div>
+                  )}
                   <UserButton
                     afterSignOutUrl="/"
                     appearance={{
@@ -178,6 +230,23 @@ export default function Navbar() {
             className="md:hidden bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700"
           >
             <div className="px-4 py-4 space-y-4">
+              {/* Show role badge for mobile users */}
+              {isSignedIn && !roleLoading && userRole && (
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="flex justify-center"
+                >
+                  <div className={`px-3 py-1 text-sm font-medium rounded-full ${
+                    userRole === 'HR' 
+                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
+                      : 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                  }`}>
+                    {userRole === 'HR' ? 'HR Dashboard Access' : 'Candidate Portal Access'}
+                  </div>
+                </motion.div>
+              )}
+
               {currentNavItems.map((item) =>
                 item.type === "link" ? (
                   <Link key={item.name} href={item.href}>
