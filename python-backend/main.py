@@ -259,24 +259,14 @@ class CommunicationRequest(BaseModel):
 @app.post("/schedule-interview/")
 async def schedule_interview_api(request: ScheduleRequest):
     """
-    Schedule an interview based on recruiter and candidate availability using new agent
-    
-    - candidate: Candidate information (name, email)
-    - job: Job information (company, position, tone)
-    - availability: Recruiter and candidate availability descriptions
+    Find available interview slots - returns data for frontend to handle email/calendar
     """
     try:
-        # Convert to the format expected by new schedule_interview function
         input_data = request.dict()
         input_str = json.dumps(input_data)
         
         result = schedule_interview(input_str)
-        
-        # Parse the result back to JSON
-        try:
-            return json.loads(result)
-        except json.JSONDecodeError:
-            return {"raw_result": result}
+        return json.loads(result)
             
     except Exception as e:
         return JSONResponse(
@@ -284,10 +274,12 @@ async def schedule_interview_api(request: ScheduleRequest):
             content={"error": str(e)}
         )
 
-@app.post("/send-communication/")
-async def send_communication_api(request: CommunicationRequest):
+@app.post("/generate-communication/")
+async def generate_communication_api(request: CommunicationRequest):
+    """
+    Generate email content - returns data for frontend to handle email sending
+    """
     try:
-        # Convert to the format expected by send_candidate_message function
         input_data = {
             "type": request.type,
             "candidate": request.candidate.dict(),
@@ -296,12 +288,7 @@ async def send_communication_api(request: CommunicationRequest):
         input_str = json.dumps(input_data)
         
         result = send_candidate_message(input_str)
-        
-        # Parse the result back to JSON
-        try:
-            return json.loads(result)
-        except json.JSONDecodeError:
-            return {"raw_result": result}
+        return json.loads(result)
             
     except Exception as e:
         return JSONResponse(
@@ -441,7 +428,11 @@ async def root():
             "interview_scheduling": "/schedule-interview/",
             "candidate_communication": "/send-communication/",
             "complete_workflow": "/complete-hiring-workflow/",
-            "health_check": "/health"
+            "health_check": "/health",
+            "job_analysis": "/job-analysis",
+            "recommend_jobs": "/recommend-jobs",
+            "verify_certificate": "/verify-certificate",
+            "suggest_career": "/suggest-career",
         }
     }
 

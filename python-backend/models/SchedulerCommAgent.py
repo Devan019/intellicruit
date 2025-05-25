@@ -1,32 +1,18 @@
 import os
 import json
-import smtplib
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 from enum import Enum
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 
 from langchain.tools import tool
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_groq import ChatGroq
 
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
-from googleapiclient.discovery import build
-import pickle
-
-# Environment setup
-os.environ["GROQ_API_KEY"] = "GROQ_API_KEY"
-os.environ["EMAIL_ADDRESS"] = "EMAIL_ADDRESS"
-os.environ["EMAIL_PASSWORD"] = "EMAIL_PASSWORD"
-
 # Initialize LLM
 llm = ChatGroq(
     model_name="llama3-70b-8192",
-    api_key=os.environ["GROQ_API_KEY"]
+    api_key=os.getenv("GROQ_API_KEY")
 )
 
 class MessageType(Enum):
@@ -35,15 +21,11 @@ class MessageType(Enum):
     FOLLOWUP = "followup"
     RESCHEDULE = "reschedule"
 
-class SchedulerCommAgent:
-    """Combined Scheduler and Communication Agent"""
+class SchedulerAgent:
+    """Simplified Scheduler Agent - Only handles scheduling logic"""
     
     def __init__(self):
-        self.email_address = os.environ.get("EMAIL_ADDRESS")
-        self.email_password = os.environ.get("EMAIL_PASSWORD")
-        self.calendar_service = None
-    
-    # =================== SCHEDULING FUNCTIONALITY ===================
+        pass
     
     def parse_availability(self, availability_text: str) -> List[Dict]:
         """Parse natural language availability into structured time slots"""
@@ -65,7 +47,6 @@ class SchedulerCommAgent:
         result = chain.invoke({"availability_text": availability_text})
         
         try:
-            # Extract JSON from the response
             start_idx = result.find('[')
             end_idx = result.rfind(']') + 1
             if start_idx != -1 and end_idx != -1:
@@ -83,17 +64,14 @@ class SchedulerCommAgent:
         for r_slot in recruiter_slots:
             for c_slot in candidate_slots:
                 if r_slot["day"] == c_slot["day"]:
-                    # Parse times
                     r_start = datetime.strptime(r_slot["start_time"], "%H:%M").time()
                     r_end = datetime.strptime(r_slot["end_time"], "%H:%M").time()
                     c_start = datetime.strptime(c_slot["start_time"], "%H:%M").time()
                     c_end = datetime.strptime(c_slot["end_time"], "%H:%M").time()
                     
-                    # Find overlap
                     overlap_start = max(r_start, c_start)
                     overlap_end = min(r_end, c_end)
                     
-                    # If there's at least 1 hour overlap
                     overlap_duration = datetime.combine(datetime.today(), overlap_end) - datetime.combine(datetime.today(), overlap_start)
                     if overlap_duration >= timedelta(hours=1):
                         matching_slots.append({
@@ -104,94 +82,113 @@ class SchedulerCommAgent:
         
         return matching_slots
     
-    def setup_google_calendar(self):
-        """Set up Google Calendar API"""
-        if self.calendar_service:
-            return self.calendar_service
-            
-        SCOPES = ['https://www.googleapis.com/auth/calendar']
-        creds = None
+    def calculate_next_dates(self, slots: List[Dict]) -> List[Dict]:
+        """Calculate actual dates for the next occurrence of each day"""
+        today = datetime.today()
+        days_map = {'Monday': 0, 'Tuesday': 1, 'Wednesday': 2, 'Thursday': 3, 
+                   'Friday': 4, 'Saturday': 5, 'Sunday': 6}
         
-        if os.path.exists('token.pickle'):
-            with open('token.pickle', 'rb') as token:
-                creds = pickle.load(token)
+        dated_slots = []
+        for slot in slots:
+            days_ahead = days_map[slot["day"]] - today.weekday()
+            if days_ahead <= 0:  # If it's today or already passed, get next week
+                days_ahead += 7
                 
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-            else:
-                flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
-                creds = flow.run_local_server(port=0)
-            with open('token.pickle', 'wb') as token:
-                pickle.dump(creds, token)
-                
-        self.calendar_service = build('calendar', 'v3', credentials=creds)
-        return self.calendar_service
+            interview_date = today + timedelta(days=days_ahead)
+            
+            dated_slots.append({
+                **slot,
+                "date": interview_date.strftime("%Y-%m-%d"),
+                "datetime_start": datetime.combine(
+                    interview_date, 
+                    datetime.strptime(slot["start_time"], "%H:%M").time()
+                ).isoformat(),
+                "datetime_end": datetime.combine(
+                    interview_date, 
+                    datetime.strptime(slot["end_time"], "%H:%M").time()
+                ).isoformat()
+            })
+        
+        return dated_slots
+
+@tool
+def schedule_interview(input_json: str) -> str:
+    """
+    Find available interview slots based on recruiter and candidate availability.
+    Returns structured data for frontend to handle email/calendar integration.
     
-    def check_calendar_availability(self, start_datetime: datetime, end_datetime: datetime) -> bool:
-        """Check if time slot is available in calendar"""
-        try:
-            service = self.setup_google_calendar()
-            
-            events_result = service.events().list(
-                calendarId='primary',
-                timeMin=start_datetime.isoformat() + 'Z',
-                timeMax=end_datetime.isoformat() + 'Z',
-                singleEvents=True,
-                orderBy='startTime'
-            ).execute()
-            
-            events = events_result.get('items', [])
-            return len(events) == 0
-            
-        except Exception as e:
-            print(f"Calendar check error: {e}")
-            return True  # Assume available if can't check
+    Input format:
+    {
+        "candidate": {"name": "str", "email": "str"},
+        "job": {"company": "str", "position": "str", "tone": "str"},
+        "availability": {"recruiter": "str", "candidate": "str"}
+    }
+    """
+    try:
+        data = json.loads(input_json)
+        agent = SchedulerAgent()
+        
+        # Parse availability
+        recruiter_slots = agent.parse_availability(data["availability"]["recruiter"])
+        candidate_slots = agent.parse_availability(data["availability"]["candidate"])
+        
+        # Find matching slots
+        matching_slots = agent.find_matching_slots(recruiter_slots, candidate_slots)
+        
+        if not matching_slots:
+            return json.dumps({
+                "success": False, 
+                "message": "No matching availability found",
+                "available_slots": [],
+                "candidate": data["candidate"],
+                "job": data["job"]
+            })
+        
+        # Calculate actual dates for all matching slots
+        dated_slots = agent.calculate_next_dates(matching_slots)
+        
+        # Return the first available slot as recommended, but include all options
+        recommended_slot = dated_slots[0] if dated_slots else None
+        
+        return json.dumps({
+            "success": True,
+            "message": "Interview slots found",
+            "recommended_slot": recommended_slot,
+            "available_slots": dated_slots,
+            "candidate": data["candidate"],
+            "job": data["job"],
+            "recruiter_parsed_availability": recruiter_slots,
+            "candidate_parsed_availability": candidate_slots
+        })
+        
+    except Exception as e:
+        return json.dumps({
+            "success": False, 
+            "message": f"Error: {str(e)}",
+            "available_slots": []
+        })
+
+@tool
+def send_candidate_message(input_json: str) -> str:
+    """
+    Generate message content for candidate communication.
+    Returns structured data for frontend to handle email sending.
     
-    def create_calendar_event(self, summary: str, description: str, 
-                            start_datetime: datetime, end_datetime: datetime,
-                            attendee_emails: List[str]) -> Optional[str]:
-        """Create calendar event and return event link"""
-        try:
-            service = self.setup_google_calendar()
-            
-            event_body = {
-                'summary': summary,
-                'description': description,
-                'start': {'dateTime': start_datetime.isoformat(), 'timeZone': 'UTC'},
-                'end': {'dateTime': end_datetime.isoformat(), 'timeZone': 'UTC'},
-                'attendees': [{'email': email} for email in attendee_emails],
-                'reminders': {
-                    'useDefault': False,
-                    'overrides': [
-                        {'method': 'email', 'minutes': 24 * 60},
-                        {'method': 'popup', 'minutes': 30},
-                    ],
-                },
-            }
-            
-            event = service.events().insert(
-                calendarId='primary',
-                body=event_body,
-                sendUpdates='all'
-            ).execute()
-            
-            return event.get('htmlLink')
-            
-        except Exception as e:
-            print(f"Calendar event creation error: {e}")
-            return None
-    
-    # =================== COMMUNICATION FUNCTIONALITY ===================
-    
-    def generate_message(self, message_type: MessageType, candidate_name: str,
-                        company_name: str, position: str, company_tone: str = "professional",
-                        interview_details: Optional[Dict] = None) -> str:
-        """Generate email message based on type and company tone"""
+    Input format:
+    {
+        "type": "rejection|followup|reschedule",
+        "candidate": {"name": "str", "email": "str"},
+        "job": {"company": "str", "position": "str", "tone": "str"},
+        "interview_details": {"date": "str", "start_time": "str", "end_time": "str"} // optional
+    }
+    """
+    try:
+        data = json.loads(input_json)
         
         interview_info = ""
-        if interview_details:
-            interview_info = f"Date: {interview_details.get('date', '')}\nTime: {interview_details.get('start_time', '')} - {interview_details.get('end_time', '')}"
+        if data.get("interview_details"):
+            details = data["interview_details"]
+            interview_info = f"Date: {details.get('date', '')}\nTime: {details.get('start_time', '')} - {details.get('end_time', '')}"
         
         prompt = PromptTemplate.from_template("""
         Generate a {message_type} email for a job candidate.
@@ -213,187 +210,45 @@ class SchedulerCommAgent:
         """)
         
         chain = prompt | llm | StrOutputParser()
-        return chain.invoke({
-            "message_type": message_type.value.replace('_', ' '),
-            "candidate_name": candidate_name,
-            "company_name": company_name,
-            "position": position,
-            "company_tone": company_tone,
+        message_body = chain.invoke({
+            "message_type": data["type"].replace('_', ' '),
+            "candidate_name": data['candidate']['name'],
+            "company_name": data['job']['company'],
+            "position": data['job']['position'],
+            "company_tone": data['job'].get('tone', 'professional'),
             "interview_info": interview_info
         })
-    
-    def get_email_subject(self, message_type: MessageType, company_name: str, position: str) -> str:
-        """Generate email subject line"""
+        
+        # Generate subject line
         subjects = {
-            MessageType.INTERVIEW_INVITE: f"Interview Invitation - {position} at {company_name}",
-            MessageType.REJECTION: f"Update on Your {position} Application - {company_name}",
-            MessageType.FOLLOWUP: f"Follow-up: {position} Application at {company_name}",
-            MessageType.RESCHEDULE: f"Interview Reschedule - {position} at {company_name}"
+            "interview_invite": f"Interview Invitation - {data['job']['position']} at {data['job']['company']}",
+            "rejection": f"Update on Your {data['job']['position']} Application - {data['job']['company']}",
+            "followup": f"Follow-up: {data['job']['position']} Application at {data['job']['company']}",
+            "reschedule": f"Interview Reschedule - {data['job']['position']} at {data['job']['company']}"
         }
-        return subjects.get(message_type, f"Regarding Your Application - {company_name}")
-    
-    def send_email(self, to_email: str, subject: str, body: str) -> bool:
-        """Send email via SMTP"""
-        try:
-            msg = MIMEMultipart()
-            msg['From'] = self.email_address
-            msg['To'] = to_email
-            msg['Subject'] = subject
-            
-            msg.attach(MIMEText(body, 'plain'))
-            
-            server = smtplib.SMTP('smtp.gmail.com', 587)
-            server.starttls()
-            server.login(self.email_address, self.email_password)
-            server.send_message(msg)
-            server.quit()
-            return True
-        except Exception as e:
-            print(f"Email sending failed: {e}")
-            return False
-
-# =================== TOOLS ===================
-
-@tool
-def schedule_interview(input_json: str) -> str:
-    """
-    Schedule interview based on availability and send invitation.
-    
-    Input format:
-    {
-        "candidate": {"name": "str", "email": "str"},
-        "job": {"company": "str", "position": "str", "tone": "str"},
-        "availability": {"recruiter": "str", "candidate": "str"}
-    }
-    """
-    try:
-        data = json.loads(input_json)
-        agent = SchedulerCommAgent()
         
-        # Parse availability
-        recruiter_slots = agent.parse_availability(data["availability"]["recruiter"])
-        candidate_slots = agent.parse_availability(data["availability"]["candidate"])
-        
-        # Find matching slots
-        matching_slots = agent.find_matching_slots(recruiter_slots, candidate_slots)
-        
-        if not matching_slots:
-            return json.dumps({"success": False, "message": "No matching availability found"})
-        
-        # Find available slot
-        available_slot = None
-        for slot in matching_slots:
-            # Calculate actual datetime
-            today = datetime.today()
-            days_map = {'Monday': 0, 'Tuesday': 1, 'Wednesday': 2, 'Thursday': 3, 
-                       'Friday': 4, 'Saturday': 5, 'Sunday': 6}
-            
-            days_ahead = days_map[slot["day"]] - today.weekday()
-            if days_ahead < 0:
-                days_ahead += 7
-                
-            interview_date = today + timedelta(days=days_ahead)
-            start_time = datetime.strptime(slot["start_time"], "%H:%M").time()
-            end_time = datetime.strptime(slot["end_time"], "%H:%M").time()
-            
-            start_datetime = datetime.combine(interview_date, start_time)
-            end_datetime = datetime.combine(interview_date, end_time)
-            
-            # Check calendar availability
-            if agent.check_calendar_availability(start_datetime, end_datetime):
-                available_slot = {
-                    "day": slot["day"],
-                    "date": interview_date.strftime("%Y-%m-%d"),
-                    "start_time": slot["start_time"],
-                    "end_time": slot["end_time"]
-                }
-                
-                # Create calendar event
-                summary = f"Interview: {data['candidate']['name']} - {data['job']['position']}"
-                description = f"Interview for {data['job']['position']} position at {data['job']['company']}"
-                attendees = [data['candidate']['email']]
-                
-                calendar_link = agent.create_calendar_event(
-                    summary, description, start_datetime, end_datetime, attendees
-                )
-                
-                # Generate and send invitation email
-                message = agent.generate_message(
-                    MessageType.INTERVIEW_INVITE,
-                    data['candidate']['name'],
-                    data['job']['company'],
-                    data['job']['position'],
-                    data['job'].get('tone', 'professional'),
-                    available_slot
-                )
-                
-                subject = agent.get_email_subject(
-                    MessageType.INTERVIEW_INVITE,
-                    data['job']['company'],
-                    data['job']['position']
-                )
-                
-                email_sent = agent.send_email(data['candidate']['email'], subject, message)
-                
-                return json.dumps({
-                    "success": True,
-                    "scheduled_time": available_slot,
-                    "calendar_link": calendar_link,
-                    "email_sent": email_sent,
-                    "message": "Interview scheduled successfully"
-                })
-                
-        return json.dumps({"success": False, "message": "All slots are booked"})
-        
-    except Exception as e:
-        return json.dumps({"success": False, "message": f"Error: {str(e)}"})
-
-@tool
-def send_candidate_message(input_json: str) -> str:
-    """
-    Send communication to candidate (rejection, followup, etc.)
-    
-    Input format:
-    {
-        "type": "rejection|followup|reschedule",
-        "candidate": {"name": "str", "email": "str"},
-        "job": {"company": "str", "position": "str", "tone": "str"}
-    }
-    """
-    try:
-        data = json.loads(input_json)
-        agent = SchedulerCommAgent()
-        
-        message_type = MessageType(data["type"])
-        
-        # Generate message
-        message = agent.generate_message(
-            message_type,
-            data['candidate']['name'],
-            data['job']['company'],
-            data['job']['position'],
-            data['job'].get('tone', 'professional')
-        )
-        
-        subject = agent.get_email_subject(
-            message_type,
-            data['job']['company'],
-            data['job']['position']
-        )
-        
-        # Send email
-        email_sent = agent.send_email(data['candidate']['email'], subject, message)
+        subject = subjects.get(data["type"], f"Regarding Your Application - {data['job']['company']}")
         
         return json.dumps({
-            "success": email_sent,
-            "message": "Email sent successfully" if email_sent else "Email sending failed",
-            "email_preview": message
+            "success": True,
+            "message": "Email content generated successfully",
+            "email_data": {
+                "to_email": data['candidate']['email'],
+                "subject": subject,
+                "body": message_body,
+                "candidate": data['candidate'],
+                "job": data['job'],
+                "message_type": data["type"]
+            }
         })
         
     except Exception as e:
-        return json.dumps({"success": False, "message": f"Error: {str(e)}"})
+        return json.dumps({
+            "success": False, 
+            "message": f"Error: {str(e)}"
+        })
 
-# Example usage
+# Example usage for testing
 if __name__ == "__main__":
     # Test scheduling
     schedule_data = {
@@ -407,13 +262,3 @@ if __name__ == "__main__":
     
     result = schedule_interview(json.dumps(schedule_data))
     print("Schedule Result:", result)
-    
-    # Test communication
-    comm_data = {
-        "type": "rejection",
-        "candidate": {"name": "John Doe", "email": "john@example.com"},
-        "job": {"company": "TechCorp", "position": "Python Developer", "tone": "empathetic"}
-    }
-    
-    result = send_candidate_message(json.dumps(comm_data))
-    print("Communication Result:", result)

@@ -42,7 +42,7 @@ const JobInsights = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const API_URL = process.env.NEXT_PUBLIC_FASTAPI_URI || 'http://localhost:8000';
         const response = await axios.get(`${API_URL}/job-analysis`);
         // if (!response.ok) {
         //   throw new Error('Network response was not ok');
