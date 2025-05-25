@@ -31,6 +31,8 @@ export async function POST(request) {
 
         await newUser.save();
 
+        // console.log("User created successfully:", newUser);
+
         return new Response(JSON.stringify({ message: "User created successfully!" }), {
             status: 201,
             headers: { "Content-Type": "application/json" },

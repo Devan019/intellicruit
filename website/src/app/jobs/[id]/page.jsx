@@ -7,6 +7,5 @@ export default function JobDetailsPage({ params }) {
     <WithRoleCheck requiredRole={["HR", "Candidate"]}>
       <JobDetails jobId={params.id} />
     </WithRoleCheck>
-
   )
 }
