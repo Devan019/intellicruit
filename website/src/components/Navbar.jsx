@@ -109,8 +109,9 @@ export default function Navbar() {
           {/* Logo */}
           <motion.div whileHover={{ scale: 1.05 }} className="flex items-center space-x-2">
             <Link href="/" className="flex items-center space-x-2">
-              <Bot className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-              <span className="text-xl font-bold text-gray-900 dark:text-white">Intellicruit</span>
+              {/* <Bot className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+              <span className="text-xl font-bold text-gray-900 dark:text-white">Intellicruit</span> */}
+              <img src="/Intellicruit2.png" alt="" className="h-56"/>
             </Link>
           </motion.div>
 
