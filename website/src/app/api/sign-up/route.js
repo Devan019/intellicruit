@@ -1,10 +1,11 @@
 import { connectToDB } from "@/lib/mongodb";
-import userModel from "@/models/User";
+import UserModel from "@/models/User";
 
 export async function POST(request) {
     await connectToDB();
+    
     try {
-        const { clerk_id, resume_url } = await request.json();
+        const { clerk_id,email, name, resume_url } = await request.json();
 
         if (!clerk_id) {
             return new Response(JSON.stringify({ error: "Missing Clerk_id!" }), {
@@ -13,7 +14,7 @@ export async function POST(request) {
             });
         }
 
-        const existingUser = await userModel.findOne({ clerk_id });
+        const existingUser = await UserModel.findOne({ clerk_id });
         if (existingUser) {
             return new Response(JSON.stringify({ error: "User already exists!" }), {
                 status: 400,
@@ -21,8 +22,10 @@ export async function POST(request) {
             });
         }
 
-        const newUser = new userModel({
+        const newUser = new UserModel({
             clerk_id,
+            email,
+            name,
             resume_url: resume_url || null,
         });
 
@@ -34,7 +37,7 @@ export async function POST(request) {
         });
 
     } catch (error) {
-        console.error("Error in sign-up route:", error);
+        console.log("Error in sign-up route:", error);
         return new Response(JSON.stringify({ error: "Internal Server Error" }), {
             status: 500,
             headers: { "Content-Type": "application/json" },
@@ -54,7 +57,7 @@ export async function PUT(request) {
             });
         }
 
-        const User = await userModel.findOne({ clerk_id });
+        const User = await UserModel.findOne({ clerk_id });
 
         if (!User) {
             return new Response(JSON.stringify({ error: "User not found!" }), {
@@ -94,7 +97,7 @@ export async function GET(request) {
             });
         }
 
-        const user = await userModel.findOne({ clerk_id });
+        const user = await UserModel.findOne({ clerk_id });
 
         if (!user) {
             return new Response(JSON.stringify({ error: "User not found!" }), {

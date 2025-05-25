@@ -1,5 +1,11 @@
 import JobSearch from "@/components/candidate/JobSearch"
+import WithRoleCheck from "@/components/WithRoleCheck";
 
 export default function JobsPage() {
-  return <JobSearch />
+  return (
+    <WithRoleCheck requiredRole={["HR", "Candidate"]}>
+      <JobSearch />
+    </WithRoleCheck>
+
+  )
 }
