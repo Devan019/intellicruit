@@ -28,7 +28,7 @@ export default function Navbar() {
   const navItems = [
     { name: "Home", href: "#home", type: "scroll" },
     { name: "Features", href: "#features", type: "scroll" },
-    { name: "Jobs", href: "/jobs", type: "link" },
+    { name: "Candiadte", href: "/candidate", type: "link" },
     { name: "Contact", href: "#contact", type: "scroll" },
   ]
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Clock, AlertCircle } from "lucide-react"
+import axios from "axios"
 
 export default function AptitudeTest({ test, onComplete }) {
   const [currentQuestion, setCurrentQuestion] = useState(0)
@@ -10,6 +11,7 @@ export default function AptitudeTest({ test, onComplete }) {
   const [timeLeft, setTimeLeft] = useState(test.timeLimit * 60) // Convert to seconds
   const [testStarted, setTestStarted] = useState(false)
   const [testCompleted, setTestCompleted] = useState(false)
+
 
   useEffect(() => {
     let timer
@@ -52,20 +54,29 @@ export default function AptitudeTest({ test, onComplete }) {
     }
   }
 
-  const handleSubmitTest = () => {
+
+
+  const handleSubmitTest = async() => {
     setTestCompleted(true)
 
-    // Calculate score
     let correctAnswers = 0
     test.questions.forEach((question) => {
       if (answers[question.id] === question.correctAnswer) {
         correctAnswers++
       }
     })
-
     const score = Math.round((correctAnswers / test.questions.length) * 100)
     const passed = score >= test.passingScore
+    const testResult = {
+      score, passed,answers: Object.entries(answers).map(([questionId, answerIndex]) => ({
+        questionId,
+        answer: test.questions.find(q => q.id === questionId).options[answerIndex],
+        isCorrect: test.questions.find(q => q.id === questionId).correctAnswer === answerIndex,
+      })),
+    }
 
+    await axios.post("/api/application", testResult)
+    
     const result = {
       score,
       passed,

@@ -6,6 +6,7 @@ import { ArrowLeft, CheckCircle, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import AptitudeTest from "./AptitudeTest"
 import ApplicationForm from "./ApplicationForm"
+import axios from "axios"
 
 export default function JobApplication({ jobId }) {
   const [job, setJob] = useState(null)
@@ -13,70 +14,27 @@ export default function JobApplication({ jobId }) {
   const [testResult, setTestResult] = useState(null)
   const [loading, setLoading] = useState(true)
   const [parsedResumeData, setparsedResumeData] = useState(false);
+  const [isgiven, setisgiven] = useState(false)
 
-  // Mock job data
-  const mockJob = {
-    id: 1,
-    title: "Senior Frontend Developer",
-    company: "TechCorp Inc.",
-    hasAptitudeTest: true,
-    aptitudeTest: {
-      title: "Frontend Development Assessment",
-      description: "Test your knowledge of React, JavaScript, and frontend best practices",
-      timeLimit: 30,
-      passingScore: 70,
-      questions: [
-        {
-          id: 1,
-          question: "What is the purpose of React hooks?",
-          type: "multiple-choice",
-          options: [
-            "To add styling to components",
-            "To manage state and side effects in functional components",
-            "To create class components",
-            "To handle routing",
-          ],
-          correctAnswer: 1,
-          points: 1,
-        },
-        {
-          id: 2,
-          question: "Which of the following is a valid way to handle asynchronous operations in JavaScript?",
-          type: "multiple-choice",
-          options: [
-            "Using callbacks only",
-            "Using promises and async/await",
-            "Using synchronous functions",
-            "Using global variables",
-          ],
-          correctAnswer: 1,
-          points: 1,
-        },
-        {
-          id: 3,
-          question: "What is the virtual DOM in React?",
-          type: "multiple-choice",
-          options: [
-            "A copy of the real DOM kept in memory",
-            "A new HTML standard",
-            "A CSS framework",
-            "A database technology",
-          ],
-          correctAnswer: 0,
-          points: 1,
-        },
-      ],
-    },
+  const getJobVisId = async () => {
+    const api = await axios.get(`/api/job/${jobId}`)
+    return api.data
   }
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setJob(mockJob)
-      setLoading(false)
-    }, 1000)
+    setLoading(true)
+    const fetchJob = async () => {
+      try {
+        const jobData = await getJobVisId()
+        setJob(jobData)
+      } catch (error) {
+        console.error("Error fetching job details:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchJob()
   }, [jobId])
-
   const handleTestComplete = (result) => {
     setTestResult(result)
     if (result.passed) {
@@ -141,21 +99,19 @@ export default function JobApplication({ jobId }) {
           <div className="flex items-center justify-center">
             <div className="flex items-center space-x-4">
               {/* Step 1: Aptitude Test */}
-              {job.hasAptitudeTest && (
+              {job.settings.enableAptitudeTest && (
                 <>
                   <div
-                    className={`flex items-center ${
-                      currentStep >= 1 ? "text-blue-600 dark:text-blue-400" : "text-gray-400"
-                    }`}
+                    className={`flex items-center ${currentStep >= 1 ? "text-blue-600 dark:text-blue-400" : "text-gray-400"
+                      }`}
                   >
                     <div
-                      className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${
-                        currentStep > 1
+                      className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${currentStep > 1
                           ? "border-green-600 bg-green-600 text-white"
                           : currentStep === 1
                             ? "border-blue-600 bg-blue-600 text-white"
                             : "border-gray-300"
-                      }`}
+                        }`}
                     >
                       {currentStep > 1 ? <CheckCircle className="h-4 w-4" /> : "1"}
                     </div>
@@ -167,22 +123,20 @@ export default function JobApplication({ jobId }) {
 
               {/* Step 2: Application Form */}
               <div
-                className={`flex items-center ${
-                  currentStep >= (job.hasAptitudeTest ? 2 : 1) ? "text-blue-600 dark:text-blue-400" : "text-gray-400"
-                }`}
+                className={`flex items-center ${currentStep >= (job.settings.enableAptitudeTest ? 2 : 1) ? "text-blue-600 dark:text-blue-400" : "text-gray-400"
+                  }`}
               >
                 <div
-                  className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${
-                    currentStep > (job.hasAptitudeTest ? 2 : 1)
+                  className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${currentStep > (job.settings.enableAptitudeTest ? 2 : 1)
                       ? "border-green-600 bg-green-600 text-white"
-                      : currentStep === (job.hasAptitudeTest ? 2 : 1)
+                      : currentStep === (job.settings.enableAptitudeTest ? 2 : 1)
                         ? "border-blue-600 bg-blue-600 text-white"
                         : "border-gray-300"
-                  }`}
+                    }`}
                 >
-                  {currentStep > (job.hasAptitudeTest ? 2 : 1) ? (
+                  {currentStep > (job.settings.enableAptitudeTest ? 2 : 1) ? (
                     <CheckCircle className="h-4 w-4" />
-                  ) : job.hasAptitudeTest ? (
+                  ) : job.settings.enableAptitudeTest ? (
                     "2"
                   ) : (
                     "1"
@@ -194,20 +148,18 @@ export default function JobApplication({ jobId }) {
 
               {/* Step 3: Confirmation */}
               <div
-                className={`flex items-center ${
-                  currentStep >= (job.hasAptitudeTest ? 3 : 2) ? "text-green-600 dark:text-green-400" : "text-gray-400"
-                }`}
+                className={`flex items-center ${currentStep >= (job.settings.enableAptitudeTest ? 3 : 2) ? "text-green-600 dark:text-green-400" : "text-gray-400"
+                  }`}
               >
                 <div
-                  className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${
-                    currentStep >= (job.hasAptitudeTest ? 3 : 2)
+                  className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${currentStep >= (job.settings.enableAptitudeTest ? 3 : 2)
                       ? "border-green-600 bg-green-600 text-white"
                       : "border-gray-300"
-                  }`}
+                    }`}
                 >
-                  {currentStep >= (job.hasAptitudeTest ? 3 : 2) ? (
+                  {currentStep >= (job.settings.enableAptitudeTest ? 3 : 2) ? (
                     <CheckCircle className="h-4 w-4" />
-                  ) : job.hasAptitudeTest ? (
+                  ) : job.settings.enableAptitudeTest ? (
                     "3"
                   ) : (
                     "2"
@@ -220,15 +172,15 @@ export default function JobApplication({ jobId }) {
         </div>
 
         {/* Content based on current step */}
-        {currentStep === 1 && job.hasAptitudeTest && (
+        {currentStep === 1 && job.settings.enableAptitudeTest && (
           <AptitudeTest test={job.aptitudeTest} onComplete={handleTestComplete} />
         )}
 
-        {((currentStep === 2 && job.hasAptitudeTest) || (currentStep === 1 && !job.hasAptitudeTest)) && (
+        {((currentStep === 2 && job.settings.enableAptitudeTest) || (currentStep === 1 && !job.settings.enableAptitudeTest)) && (
           <ApplicationForm job={job} testResult={testResult} onSubmit={handleApplicationSubmit} parsedResumeData={parsedResumeData} setparsedResumeData={setparsedResumeData} />
         )}
 
-        {currentStep === (job.hasAptitudeTest ? 3 : 2) && (
+        {currentStep === (job.settings.enableAptitudeTest ? 3 : 2) && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -297,17 +249,7 @@ export default function JobApplication({ jobId }) {
                   Browse Other Jobs
                 </motion.button>
               </Link>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  setCurrentStep(1)
-                  setTestResult(null)
-                }}
-                className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              >
-                Retake Test
-              </motion.button>
+              
             </div>
           </motion.div>
         )}
