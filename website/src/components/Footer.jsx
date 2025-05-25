@@ -34,7 +34,7 @@ export default function Footer() {
   const socialLinks = [
     { icon: Twitter, href: "#", label: "Twitter" },
     { icon: Linkedin, href: "#", label: "LinkedIn" },
-    { icon: Github, href: "#", label: "GitHub" },
+    { icon: Github, href: "https://github.com/milANBHADARKA/intellicruit/", label: "GitHub" },
   ]
 
   return (
@@ -64,7 +64,7 @@ export default function Footer() {
               <div className="space-y-3">
                 <div className="flex items-center space-x-3 text-gray-600 dark:text-gray-400">
                   <Mail className="h-4 w-4" />
-                  <span>hello@intellicruit.com</span>
+                  <span>intellicruitorg@gmail.com</span>
                 </div>
                 <div className="flex items-center space-x-3 text-gray-600 dark:text-gray-400">
                   <Phone className="h-4 w-4" />
@@ -72,7 +72,7 @@ export default function Footer() {
                 </div>
                 <div className="flex items-center space-x-3 text-gray-600 dark:text-gray-400">
                   <MapPin className="h-4 w-4" />
-                  <span>San Francisco, CA</span>
+                  <span>Gujarat, India</span>
                 </div>
               </div>
             </motion.div>
