@@ -1,4 +1,4 @@
-import HRDashboard from "../../components/HRDashboard"
+import HRDashboard from "../../components/hr/HRDashboard"
 import WithRoleCheck from "@/components/WithRoleCheck";
 
 

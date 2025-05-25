@@ -1,4 +1,5 @@
 "use client"
+import axios from 'axios';
 import React, { useState, useEffect } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -42,11 +43,11 @@ const JobInsights = () => {
       try {
         setLoading(true);
         const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-        const response = await fetch(`${API_URL}/job-analysis`);
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        const jobData = await response.json();
+        const response = await axios.get(`${API_URL}/job-analysis`);
+        // if (!response.ok) {
+        //   throw new Error('Network response was not ok');
+        // }
+        const jobData =  response.data;
         setData(jobData);
       } catch (err) {
         setError('Failed to fetch data');

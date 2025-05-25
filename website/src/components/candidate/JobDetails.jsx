@@ -4,87 +4,30 @@ import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { MapPin, Clock, DollarSign, Briefcase, Users, Calendar, ArrowLeft, ExternalLink } from "lucide-react"
 import Link from "next/link"
+import axios from "axios"
 
 export default function JobDetails({ jobId }) {
   const [job, setJob] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  // Mock job data - in real app, this would come from API
-  const mockJob = {
-    id: 1,
-    title: "Senior Frontend Developer",
-    company: "TechCorp Inc.",
-    location: "San Francisco, CA",
-    jobType: "full-time",
-    experienceLevel: "senior",
-    department: "Engineering",
-    salary: "$120,000 - $160,000",
-    description: `We're looking for a senior frontend developer to join our innovative team at TechCorp Inc. You'll be working on cutting-edge web applications that serve millions of users worldwide.
-
-As a Senior Frontend Developer, you'll collaborate with our design and backend teams to create exceptional user experiences. You'll have the opportunity to mentor junior developers and contribute to architectural decisions.
-
-Our tech stack includes React, TypeScript, Next.js, and modern CSS frameworks. We value clean code, testing, and continuous learning.`,
-    responsibilities: [
-      "Develop and maintain high-quality frontend applications using React and TypeScript",
-      "Collaborate with UX/UI designers to implement pixel-perfect designs",
-      "Optimize applications for maximum speed and scalability",
-      "Mentor junior developers and conduct code reviews",
-      "Participate in architectural decisions and technical planning",
-      "Write comprehensive tests and documentation",
-      "Stay up-to-date with the latest frontend technologies and best practices",
-    ],
-    requirements: [
-      "5+ years of experience in frontend development",
-      "Expert knowledge of React, JavaScript, and TypeScript",
-      "Experience with modern build tools and workflows",
-      "Strong understanding of responsive design and cross-browser compatibility",
-      "Experience with testing frameworks (Jest, React Testing Library)",
-      "Knowledge of performance optimization techniques",
-      "Excellent communication and teamwork skills",
-      "Bachelor's degree in Computer Science or equivalent experience",
-    ],
-    skills: [
-      "React",
-      "TypeScript",
-      "JavaScript",
-      "HTML5",
-      "CSS3",
-      "Next.js",
-      "Redux",
-      "GraphQL",
-      "REST APIs",
-      "Git",
-      "Webpack",
-      "Jest",
-    ],
-    benefits: [
-      "Competitive salary and equity package",
-      "Comprehensive health, dental, and vision insurance",
-      "401(k) with company matching",
-      "Flexible work arrangements and remote options",
-      "Professional development budget",
-      "Unlimited PTO policy",
-      "Modern office with free meals and snacks",
-      "Team building events and company retreats",
-    ],
-    postedDate: "2024-01-15",
-    applicationDeadline: "2024-02-15",
-    hasAptitudeTest: true,
-    applicants: 45,
-    companyInfo: {
-      size: "500-1000 employees",
-      industry: "Technology",
-      founded: "2015",
-      website: "https://techcorp.com",
-    },
+  const getJobVisId = async ( ) => {
+    const api = await axios.get(`/api/job/${jobId}`)
+    return api.data
   }
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setJob(mockJob)
-      setLoading(false)
-    }, 1000)
+    setLoading(true)
+    const fetchJob = async () => {
+      try {
+        const jobData = await getJobVisId()
+        setJob(jobData)
+      } catch (error) {
+        console.error("Error fetching job details:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchJob()
   }, [jobId])
 
   const getTimeAgo = (dateString) => {
@@ -159,11 +102,11 @@ Our tech stack includes React, TypeScript, Next.js, and modern CSS frameworks. W
                 </div>
                 <div className="flex items-center">
                   <DollarSign className="h-4 w-4 mr-1" />
-                  {job.salary}
+                  {job.salaryRange.min} To {job.salaryRange.max} 
                 </div>
                 <div className="flex items-center">
                   <Clock className="h-4 w-4 mr-1" />
-                  Posted {getTimeAgo(job.postedDate)}
+                  Posted {getTimeAgo(job.createdAt)}
                 </div>
                 <div className="flex items-center">
                   <Users className="h-4 w-4 mr-1" />
@@ -171,7 +114,7 @@ Our tech stack includes React, TypeScript, Next.js, and modern CSS frameworks. W
                 </div>
               </div>
 
-              {job.hasAptitudeTest && (
+              {job.settings.enableAptitudeTest && (
                 <div className="inline-flex items-center px-4 py-2 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 rounded-lg text-sm mb-4">
                   <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
                   Aptitude Test Required
@@ -180,7 +123,7 @@ Our tech stack includes React, TypeScript, Next.js, and modern CSS frameworks. W
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 mt-4 lg:mt-0">
-              <Link href={`/apply/${job.id}`}>
+              <Link href={`/apply/${job._id}`}>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -315,18 +258,18 @@ Our tech stack includes React, TypeScript, Next.js, and modern CSS frameworks. W
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">Industry:</span>
-                  <span className="text-gray-900 dark:text-white">{job.companyInfo.industry}</span>
+                  <span className="text-gray-900 dark:text-white">{job.companyInfo?.industry}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">Company Size:</span>
-                  <span className="text-gray-900 dark:text-white">{job.companyInfo.size}</span>
+                  <span className="text-gray-900 dark:text-white">{job.companyInfo?.size}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">Founded:</span>
-                  <span className="text-gray-900 dark:text-white">{job.companyInfo.founded}</span>
+                  <span className="text-gray-900 dark:text-white">{job.companyInfo?.founded}</span>
                 </div>
                 <a
-                  href={job.companyInfo.website}
+                  href={job.companyInfo?.website}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
@@ -348,7 +291,7 @@ Our tech stack includes React, TypeScript, Next.js, and modern CSS frameworks. W
               <p className="text-blue-100 mb-4 text-sm">
                 Join our team and make an impact with cutting-edge technology.
               </p>
-              <Link href={`/apply/${job.id}`}>
+              <Link href={`/apply/${job._id}`}>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}

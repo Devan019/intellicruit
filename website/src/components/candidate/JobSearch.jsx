@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Search, Filter, MapPin, Clock, DollarSign, Briefcase, ChevronDown, X } from "lucide-react"
 import Link from "next/link"
+import axios from "axios"
 
 export default function JobSearch() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -18,73 +19,18 @@ export default function JobSearch() {
   const [jobs, setJobs] = useState([])
   const [filteredJobs, setFilteredJobs] = useState([])
 
-  // Mock job data - in real app, this would come from API
-  const mockJobs = [
-    {
-      id: 1,
-      title: "Senior Frontend Developer",
-      company: "TechCorp Inc.",
-      location: "San Francisco, CA",
-      jobType: "full-time",
-      experienceLevel: "senior",
-      department: "Engineering",
-      salary: "$120,000 - $160,000",
-      description: "We're looking for a senior frontend developer to join our team...",
-      requirements: ["5+ years React experience", "TypeScript proficiency", "Team leadership"],
-      postedDate: "2024-01-15",
-      hasAptitudeTest: true,
-      applicants: 45,
-    },
-    {
-      id: 2,
-      title: "Product Manager",
-      company: "InnovateLabs",
-      location: "New York, NY",
-      jobType: "full-time",
-      experienceLevel: "mid",
-      department: "Product",
-      salary: "$100,000 - $130,000",
-      description: "Join our product team to drive innovation...",
-      requirements: ["3+ years PM experience", "Agile methodology", "Data analysis"],
-      postedDate: "2024-01-14",
-      hasAptitudeTest: false,
-      applicants: 32,
-    },
-    {
-      id: 3,
-      title: "UX Designer",
-      company: "DesignStudio",
-      location: "Remote",
-      jobType: "contract",
-      experienceLevel: "mid",
-      department: "Design",
-      salary: "$80,000 - $100,000",
-      description: "Create amazing user experiences for our products...",
-      requirements: ["Figma expertise", "User research", "Prototyping"],
-      postedDate: "2024-01-13",
-      hasAptitudeTest: true,
-      applicants: 28,
-    },
-    {
-      id: 4,
-      title: "Data Scientist",
-      company: "DataTech Solutions",
-      location: "Austin, TX",
-      jobType: "full-time",
-      experienceLevel: "entry",
-      department: "Data Science",
-      salary: "$90,000 - $120,000",
-      description: "Analyze complex datasets to drive business insights...",
-      requirements: ["Python/R proficiency", "Machine learning", "Statistics"],
-      postedDate: "2024-01-12",
-      hasAptitudeTest: true,
-      applicants: 67,
-    },
-  ]
+  const getJobs = async () => {
+    const api = await axios.get("/api/job")
+    return api.data
+  }
 
   useEffect(() => {
-    setJobs(mockJobs)
-    setFilteredJobs(mockJobs)
+    const fetchJobs = async () => {
+      const jobs = await getJobs()
+      setJobs(jobs)
+      setFilteredJobs(jobs)
+    }
+    fetchJobs()
   }, [])
 
   useEffect(() => {
@@ -272,7 +218,7 @@ export default function JobSearch() {
                       <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{job.title}</h3>
                       <p className="text-lg text-gray-600 dark:text-gray-400 mb-2">{job.company}</p>
                     </div>
-                    {job.hasAptitudeTest && (
+                    {job.settings.enableAptitudeTest && (
                       <span className="inline-flex items-center px-3 py-1 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 rounded-full text-sm">
                         Aptitude Test Required
                       </span>
@@ -290,11 +236,11 @@ export default function JobSearch() {
                     </div>
                     <div className="flex items-center">
                       <DollarSign className="h-4 w-4 mr-1" />
-                      {job.salary}
+                      {job.salaryRange.min} To {job.salaryRange.max} 
                     </div>
                     <div className="flex items-center">
                       <Clock className="h-4 w-4 mr-1" />
-                      {getTimeAgo(job.postedDate)}
+                      {getTimeAgo(job.createdAt)}
                     </div>
                   </div>
 
@@ -319,7 +265,7 @@ export default function JobSearch() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-500 dark:text-gray-400">{job.applicants} applicants</span>
                     <div className="flex gap-3">
-                      <Link href={`/jobs/${job.id}`}>
+                      <Link href={`/jobs/${job._id}`}>
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
@@ -328,7 +274,7 @@ export default function JobSearch() {
                           View Details
                         </motion.button>
                       </Link>
-                      <Link href={`/apply/${job.id}`}>
+                      <Link href={`/apply/${job._id}`}>
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}

@@ -142,11 +142,6 @@ app.add_middleware(
 # nest_asyncio.apply()
 # Endpoint for evaluation
 from typing import Dict, Any, Optional, List
-from dotenv import load_dotenv
-
-load_dotenv() 
-
-app = FastAPI()
 nest_asyncio.apply()
 
 def find_free_port(start_port=8000, max_port=8100):
@@ -693,26 +688,26 @@ def recommend_roles(user_input: SkillInput):
 # print(f"🔗 Public URL: {public_url}")
 # uvicorn.run(app, host="0.0.0.0", port=8000)
 # Start the server
-if __name__ == "__main__":
-    try:
-        # Find an available port
-        port = find_free_port(8000, 8100)
-        print(f"🚀 Starting server on port {port}")
+# if __name__ == "__main__":
+#     try:
+#         # Find an available port
+#         port = find_free_port(8000, 8100)
+#         print(f"🚀 Starting server on port {port}")
         
-        # Set up ngrok tunnel
-        ngrok.set_auth_token("NGROK_AUTH_TOKEN")
-        public_url = ngrok.connect(port)
-        print(f"🔗 Public URL: {public_url}")
-        print(f"📋 API Documentation: {public_url}/docs")
-        print(f"🏥 Health Check: {public_url}/health")
+#         # Set up ngrok tunnel
+#         ngrok.set_auth_token("NGROK_AUTH_TOKEN")
+#         public_url = ngrok.connect(port)
+#         print(f"🔗 Public URL: {public_url}")
+#         print(f"📋 API Documentation: {public_url}/docs")
+#         print(f"🏥 Health Check: {public_url}/health")
         
-        uvicorn.run(app, host="0.0.0.0", port=port)
+#         uvicorn.run(app, host="0.0.0.0", port=port)
         
-    except Exception as e:
-        print(f"❌ Failed to start server: {e}")
-        print("\n🔧 Alternative solutions:")
-        print("1. Kill existing process on port 8000:")
-        print("   Windows: netstat -ano | findstr :8000")
-        print("   Then: taskkill /PID <PID> /F")
-        print("2. Or use a different port manually:")
-        print("   uvicorn main:app --host 0.0.0.0 --port 8001")
+#     except Exception as e:
+#         print(f"❌ Failed to start server: {e}")
+#         print("\n🔧 Alternative solutions:")
+#         print("1. Kill existing process on port 8000:")
+#         print("   Windows: netstat -ano | findstr :8000")
+#         print("   Then: taskkill /PID <PID> /F")
+#         print("2. Or use a different port manually:")
+#         print("   uvicorn main:app --host 0.0.0.0 --port 8001")
