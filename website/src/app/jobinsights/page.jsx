@@ -5,6 +5,8 @@ import { useState, useEffect } from "react";
 import { Code, Lightbulb, TrendingUp, Briefcase, ArrowRight } from "lucide-react";
 import JobInsights from "@/components/candidate/JobInsights";
 import { useAuth } from "@clerk/nextjs";
+import WithRoleCheck from "@/components/WithRoleCheck";
+
 
 // This would be your existing Insights component
 const Insights = () => {
@@ -21,10 +23,10 @@ const Recommendations = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeCategory, setActiveCategory] = useState('all');
-  const {userId} = useAuth()
-  
+  const { userId } = useAuth()
+
   // Load skills from localStorage
-  const apiCall = async() => {
+  const apiCall = async () => {
     const api = await axios.get(`/api/user/${userId}`)
     const data = api.data;
     console.log(data)
@@ -58,14 +60,14 @@ const Recommendations = () => {
       try {
         // This would be your actual API endpoint
         // This would be your actual API endpoint
-        
+
         console.log(skills)
         const response = await axios.post('http://localhost:8000/recommend-jobs', skills);
 
         // The issue is here - you need to extract the recommended_jobs array
         console.log(response.data);
         // Change this line:
-        setRecommendations(response.data );
+        setRecommendations(response.data);
         // To this:
         setRecommendations(
           response.data && response.data.recommended_jobs
@@ -76,7 +78,7 @@ const Recommendations = () => {
       } catch (err) {
         console.error("Error fetching recommendations:", err);
         // For demo purposes, use mock data when API fails
-       
+
         setLoading(false);
         setError("Could not fetch live recommendations. Showing sample matches instead.");
       }
@@ -86,7 +88,7 @@ const Recommendations = () => {
   }, [skills]);
 
   // Create mock recommendations based on skills for demo purposes
- 
+
 
   // Filter recommendations by category
   const filteredRecommendations = activeCategory === 'all'
@@ -257,7 +259,7 @@ const Recommendations = () => {
                         {rec.type}
                       </span>
                     </div>
-                    
+
                   </div>
 
                   <h4 className="text-lg font-medium text-gray-100 mb-1">
@@ -302,67 +304,71 @@ const TabbedComponent = () => {
   const [activeTab, setActiveTab] = useState('insights');
 
   return (
-    <div className="bg-gray-900 rounded-xl p-6 shadow-lg">
-      <div className="flex justify-between border-b border-gray-700 pb-4 mb-6">
-        <div className="flex space-x-6">
-          <button
-            onClick={() => setActiveTab('insights')}
-            className={`pb-2 text-lg font-medium transition-all relative ${activeTab === 'insights'
-              ? 'text-purple-400'
-              : 'text-gray-400 hover:text-gray-300'
-              }`}
-          >
-            Insights
-            {activeTab === 'insights' && (
-              <motion.div
-                className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-500 rounded-full"
-                layoutId="activeTabLine"
-              />
-            )}
-          </button>
+    <WithRoleCheck requiredRole={["HR", "Candidate"]}>
 
-          <button
-            onClick={() => setActiveTab('recommendations')}
-            className={`pb-2 text-lg font-medium transition-all relative ${activeTab === 'recommendations'
-              ? 'text-purple-400'
-              : 'text-gray-400 hover:text-gray-300'
-              }`}
-          >
-            Recommendations
-            {activeTab === 'recommendations' && (
-              <motion.div
-                className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-500 rounded-full"
-                layoutId="activeTabLine"
-              />
-            )}
-          </button>
+      <div className="bg-gray-900 rounded-xl p-6 shadow-lg">
+        <div className="flex justify-between border-b border-gray-700 pb-4 mb-6">
+          <div className="flex space-x-6">
+            <button
+              onClick={() => setActiveTab('insights')}
+              className={`pb-2 text-lg font-medium transition-all relative ${activeTab === 'insights'
+                ? 'text-purple-400'
+                : 'text-gray-400 hover:text-gray-300'
+                }`}
+            >
+              Insights
+              {activeTab === 'insights' && (
+                <motion.div
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-500 rounded-full"
+                  layoutId="activeTabLine"
+                />
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('recommendations')}
+              className={`pb-2 text-lg font-medium transition-all relative ${activeTab === 'recommendations'
+                ? 'text-purple-400'
+                : 'text-gray-400 hover:text-gray-300'
+                }`}
+            >
+              Recommendations
+              {activeTab === 'recommendations' && (
+                <motion.div
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-500 rounded-full"
+                  layoutId="activeTabLine"
+                />
+              )}
+            </button>
+          </div>
         </div>
-      </div>
 
-      <AnimatePresence mode="wait">
-        {activeTab === 'insights' ? (
-          <motion.div
-            key="insights"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-          >
-            <Insights />
-          </motion.div>
-        ) : (
-          <motion.div
-            key="recommendations"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-          >
-            <Recommendations />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+        <AnimatePresence mode="wait">
+          {activeTab === 'insights' ? (
+            <motion.div
+              key="insights"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Insights />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="recommendations"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Recommendations />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </WithRoleCheck>
+
   );
 };
 
