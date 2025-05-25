@@ -11,6 +11,7 @@ import {
 import Profile from "./Profile"
 import JobSearch from "./candidate/JobSearch"
 import JobInsights from "./candidate/JobInsights"
+import CareerRecommender from "./CareerRecommender"
 
 export default function CandidateDashboard() {
   const [activeView, setActiveView] = useState('profile')
@@ -30,7 +31,8 @@ export default function CandidateDashboard() {
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'jobs', label: 'Job Search', icon: Briefcase },
     { id: 'job Insights', label: 'Job Insights', icon: BarChart3 },
-    { id: 'resume-tips', label: 'Resume Tips', icon: FileText }
+    { id: 'resume-tips', label: 'Resume Tips', icon: FileText },
+    { id: 'career-recommender', label: 'Career Recommender', icon: FileText },
   ]
 
   return (
@@ -95,6 +97,7 @@ export default function CandidateDashboard() {
           {activeView === 'jobs' && <JobSearch />}
           {activeView === 'job Insights' && <JobInsights />}
           {activeView === 'resume-tips' && <div className="p-6">Resume Tips View (Coming Soon)</div>}
+          {activeView === 'career-recommender' && <CareerRecommender />}
         </div>
       </div>
     </div>
