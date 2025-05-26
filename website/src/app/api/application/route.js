@@ -1,17 +1,42 @@
 import { NextResponse } from 'next/server';
 import { Application } from '@/models/Application';
 import { connectToDB } from '@/lib/mongodb';
+import { getAuth } from "@clerk/nextjs/server";
+import { getUser } from '@/lib/getUser';
+import { JobPosting } from '@/models/Job';
 
-export async function GET(req){
+export async function GET(req) {
 
   try {
     await connectToDB();
-    const application = await Application.find({}).populate('jobPosting').exec();
-    if  (!application) {
-      return new NextResponse('Application not found', { status: 404 });
-    } 
+    const { userId } = getAuth(req);
 
-    return NextResponse.json(application);
+    const user = await getUser(userId);
+    if (!user) {
+      return new NextResponse('User not found', { status: 404 });
+    }
+
+    const jobposts = await JobPosting.find({ createdBy: user._id });
+    // console.log(jobposts.length)
+    let cnt = 0;
+    const fetchcnt = async () => {
+      jobposts.map(async (job, idx) => {
+        const app = await Application.find({ jobPosting: job._id });
+        console.log("app is found", app);
+        if (app && app.length) {
+          cnt += app.length;
+        } else if (app) {
+          cnt += 1
+        }
+      })
+    }
+
+    await fetchcnt();
+
+    console.log("cnt ", cnt);
+    return NextResponse.json({
+      appcount: cnt
+    });
   } catch (error) {
     console.error('Error fetching application:', error);
     return new NextResponse('Internal Server Error', { status: 500 });

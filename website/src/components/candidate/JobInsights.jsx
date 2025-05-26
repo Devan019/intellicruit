@@ -42,12 +42,14 @@ const JobInsights = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const API_URL = process.env.NEXT_PUBLIC_FASTAPI_URI || 'http://localhost:8000';
-        const response = await axios.get(`${API_URL}/job-analysis`);
+        const API_URL = process.env.NEXT_PUBLIC_FASTAPI_URI
+        console.log(`${API_URL}/job-analysis`);
+        const response = await axios.get(`/api/job_analysis`);
         // if (!response.ok) {
         //   throw new Error('Network response was not ok');
         // }
-        const jobData =  response.data;
+        console.log(response)
+        const jobData =  response.data.response;
         setData(jobData);
       } catch (err) {
         setError('Failed to fetch data');
@@ -85,26 +87,26 @@ const JobInsights = () => {
 
   // Process data for specific charts
   const salaryByTitle = data.salary_by_title
-    .sort((a, b) => b.Salary_USD - a.Salary_USD)
-    .slice(0, 10);
+    ?.sort((a, b) => b.Salary_USD - a.Salary_USD)
+    ?.slice(0, 10);
 
   // Group data for Salary Distribution histogram
   const salaryRanges = [0, 50000, 75000, 100000, 125000, 150000, 175000, 200000];
-  const salaryDistribution = salaryRanges.map((min, i) => {
+  const salaryDistribution = salaryRanges?.map((min, i) => {
     const max = salaryRanges[i + 1] || Infinity;
-    const count = data.raw_data.filter(job =>
+    const count = data.raw_data?.filter(job =>
       job.Salary_USD >= min && (max === Infinity || job.Salary_USD < max)).length;
 
     return {
       range: max === Infinity ? `$${min / 1000}k+` : `$${min / 1000}k-${max / 1000}k`,
       count
     };
-  }).filter(range => range.count > 0);
+  })?.filter(range => range.count > 0);
 
   // Process data for AI Adoption Level vs Salary
-  const adoptionLevelData = [...new Set(data.raw_data.map(item => item.AI_Adoption_Level))]
-    .map(level => {
-      const jobsWithLevel = data.raw_data.filter(job => job.AI_Adoption_Level === level);
+  const adoptionLevelData = [...new Set(data.raw_data?.map(item => item.AI_Adoption_Level))]
+    ?.map(level => {
+      const jobsWithLevel = data.raw_data?.filter(job => job.AI_Adoption_Level === level);
       const avgSalary = jobsWithLevel.reduce((sum, job) => sum + job.Salary_USD, 0) / jobsWithLevel.length;
 
       return {
@@ -115,11 +117,11 @@ const JobInsights = () => {
     });
 
   // Process data for Remote-Friendly Jobs by Industry
-  const industryRemoteData = [...new Set(data.raw_data.map(item => item.Industry))]
-    .map(industry => {
-      const industryJobs = data.raw_data.filter(job => job.Industry === industry);
-      const remoteCount = industryJobs.filter(job => job.Remote_Friendly === "Yes").length;
-      const nonRemoteCount = industryJobs.filter(job => job.Remote_Friendly === "No").length;
+  const industryRemoteData = [...new Set(data.raw_data?.map(item => item.Industry))]
+    ?.map(industry => {
+      const industryJobs = data.raw_data?.filter(job => job.Industry === industry);
+      const remoteCount = industryJobs?.filter(job => job.Remote_Friendly === "Yes").length;
+      const nonRemoteCount = industryJobs?.filter(job => job.Remote_Friendly === "No").length;
 
       return {
         Industry: industry,
@@ -129,12 +131,12 @@ const JobInsights = () => {
     });
 
   // Process data for Job Growth Projections
-  const growthData = [...new Set(data.raw_data.map(item => item.Job_Title))]
-    .map(title => {
-      const jobsWithTitle = data.raw_data.filter(job => job.Job_Title === title);
-      const highCount = jobsWithTitle.filter(job => job.Job_Growth_Projection === "High").length;
-      const moderateCount = jobsWithTitle.filter(job => job.Job_Growth_Projection === "Moderate").length;
-      const lowCount = jobsWithTitle.filter(job => job.Job_Growth_Projection === "Low").length;
+  const growthData = [...new Set(data.raw_data?.map(item => item.Job_Title))]
+    ?.map(title => {
+      const jobsWithTitle = data.raw_data?.filter(job => job.Job_Title === title);
+      const highCount = jobsWithTitle?.filter(job => job.Job_Growth_Projection === "High").length;
+      const moderateCount = jobsWithTitle?.filter(job => job.Job_Growth_Projection === "Moderate").length;
+      const lowCount = jobsWithTitle?.filter(job => job.Job_Growth_Projection === "Low").length;
 
       return {
         Job_Title: title,
@@ -209,7 +211,7 @@ const JobInsights = () => {
         </div>
 
         {/* Distribution of Jobs by Industry */}
-        <div className="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 hover:border-blue-500/30 transition-all duration-300">
+        {/* <div className="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 hover:border-blue-500/30 transition-all duration-300">
           <h2 className="text-xl font-semibold mb-4 text-blue-400">Distribution of Jobs by Industry</h2>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
@@ -226,7 +228,7 @@ const JobInsights = () => {
                   nameKey="Industry"
                   label={renderCustomizedPieLabel}
                 >
-                  {data.industry_distribution.map((entry, index) => (
+                  {data.industry_distribution?.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -247,7 +249,7 @@ const JobInsights = () => {
               </PieChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </div> */}
 
         {/* Salary Distribution */}
         <div className="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 hover:border-blue-500/30 transition-all duration-300">
@@ -354,7 +356,7 @@ const JobInsights = () => {
         </div>
 
         {/* Job Growth Projections */}
-        <div className="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 hover:border-blue-500/30 transition-all duration-300">
+        {/* <div className="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 hover:border-blue-500/30 transition-all duration-300">
           <h2 className="text-xl font-semibold mb-4 text-blue-400">Job Growth Projections</h2>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
@@ -412,7 +414,7 @@ const JobInsights = () => {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   )

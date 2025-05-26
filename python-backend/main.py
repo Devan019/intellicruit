@@ -230,7 +230,10 @@ async def evaluate_resume(file: UploadFile = File(...)):
         input_str = json.dumps(test_input)
         result = scoring_agent(input_str)
 
-        return {"evaluation": result}
+        return {
+            "evaluation" : result,
+            "resume" : parsed_resume
+        }
     
     except Exception as e:
         return JSONResponse(
@@ -964,11 +967,11 @@ async def analyze_uploaded_files(
         except:
             pass
 
-    return {"recommended_roles": top_roles}
-# ngrok.set_auth_token("2rG09L0V1BME0VvZHKdsrKjtFHR_2ZvkN5sJHSkMscctvUBLE")
-# public_url = ngrok.connect(8000)
-# print(f"🔗 Public URL: {public_url}")
-# uvicorn.run(app, host="0.0.0.0", port=8000)
+
+ngrok.set_auth_token(os.getenv("NGROK_AUTH_TOKEN"))
+public_url = ngrok.connect(8000)
+print(f"🔗 Public URL: {public_url}")
+uvicorn.run(app, host="0.0.0.0", port=8000)
 # Start the server
 # if __name__ == "__main__":
 #     try:

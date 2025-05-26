@@ -240,10 +240,11 @@ export default function ApplicationForm({
         );
 
         let data = response.data;
-        data = JSON.parse(data)
-        console.log(data)
-        const job = data.job_description;
-        let resume = data.resume_json;
+        // console.log(data.evaluation, data.resume)
+        // data = JSON.parse(data.evaluation)
+        // console.log(data)
+        const job = data.evaluation;
+        let resume = data.resume;
 
         const jsonMatch = job.match(/```([\s\S]*?)```/);
 
@@ -274,6 +275,7 @@ export default function ApplicationForm({
         setparsedResumeData(resume)
         setIsParsingResume(false);
       } catch (error) {
+        console.log(error)
         // console.error("Upload failed:", error.response?.data || error.message);
         alert("Try another resume")
       }

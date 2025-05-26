@@ -34,6 +34,11 @@ const MockInterview = ({ jobDescription, jobTitle = "Software Developer" }) => {
   const [error, setError] = useState(null);
   const [results, setResults] = useState(null);
 
+  const [cameraStatus, setCameraStatus] = useState('idle');
+  const [streamInfo, setStreamInfo] = useState(null);
+  const [permissions, setPermissions] = useState({});
+  const [iscameraOn, setiscameraOn] = useState(false)
+
   const videoRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const streamRef = useRef(null);
@@ -48,6 +53,136 @@ const MockInterview = ({ jobDescription, jobTitle = "Software Developer" }) => {
   const SILENCE_THRESHOLD = 0.01;
   const SILENCE_DURATION = 7000; // 7 seconds
   const BACKEND_URL = process.env.NEXT_PUBLIC_FASTAPI_URI || 'http://localhost:8000';
+
+
+  // Check permissions on component mount
+  useEffect(() => {
+    checkPermissions();
+  }, []);
+
+  const checkPermissions = async () => {
+    try {
+      // Check camera permission
+      const cameraPermission = await navigator.permissions.query({ name: 'camera' });
+      const micPermission = await navigator.permissions.query({ name: 'microphone' });
+
+      setPermissions({
+        camera: cameraPermission.state,
+        microphone: micPermission.state
+      });
+    } catch (err) {
+      console.log('Permission API not supported', err);
+    }
+  };
+
+  const startCamera = async () => {
+    try {
+      setCameraStatus('requesting');
+      setError(null);
+
+      console.log('Requesting camera access...');
+
+      // Request media with explicit constraints
+      const constraints = {
+        video: {
+          width: { ideal: 1280, min: 640 },
+          height: { ideal: 720, min: 480 },
+          facingMode: "user",
+          frameRate: { ideal: 30 }
+        },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 44100
+        }
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log('Stream obtained:', stream);
+      console.log('Video tracks:', stream.getVideoTracks());
+      console.log('Audio tracks:', stream.getAudioTracks());
+
+      streamRef.current = stream;
+
+      // Set stream info for debugging
+      const videoTrack = stream.getVideoTracks()[0];
+      if (videoTrack) {
+        const settings = videoTrack.getSettings();
+        setStreamInfo({
+          label: videoTrack.label,
+          width: settings.width,
+          height: settings.height,
+          frameRate: settings.frameRate,
+          facingMode: settings.facingMode,
+          deviceId: settings.deviceId
+        });
+      }
+
+      setCameraStatus('connecting');
+
+      // Set up video element
+      if (videoRef.current) {
+        console.log('Setting up video element...');
+
+        // Clear any existing src
+        videoRef.current.srcObject = null;
+
+        // Add event listeners
+        videoRef.current.addEventListener('loadedmetadata', () => {
+          console.log('Video metadata loaded');
+          console.log('Video dimensions:', videoRef.current.videoWidth, 'x', videoRef.current.videoHeight);
+        });
+
+        videoRef.current.addEventListener('canplay', () => {
+          console.log('Video can play');
+        });
+
+        videoRef.current.addEventListener('playing', () => {
+          console.log('Video is playing');
+          setCameraStatus('playing');
+        });
+
+        videoRef.current.addEventListener('error', (e) => {
+          console.error('Video error:', e);
+          setError(`Video element error: ${e.message}`);
+          setCameraStatus('error');
+        });
+
+        // Set the stream
+        videoRef.current.srcObject = stream;
+
+        // Try to play
+        setiscameraOn(true);
+        try {
+          await videoRef.current.play();
+          console.log('Video play() succeeded');
+        } catch (playError) {
+          console.error('Video play() failed:', playError);
+          setError(`Playback failed: ${playError.message}`);
+          setCameraStatus('error');
+        }
+      }
+
+    } catch (err) {
+      console.error('Camera access error:', err);
+      let errorMessage = 'Unknown error';
+
+      if (err.name === 'NotAllowedError') {
+        errorMessage = 'Camera access denied. Please allow camera permissions and try again.';
+      } else if (err.name === 'NotFoundError') {
+        errorMessage = 'No camera found on this device.';
+      } else if (err.name === 'NotSupportedError') {
+        errorMessage = 'Camera not supported by this browser.';
+      } else if (err.name === 'NotReadableError') {
+        errorMessage = 'Camera is already in use by another application.';
+      } else {
+        errorMessage = `Camera error: ${err.message}`;
+      }
+
+      setError(errorMessage);
+      setCameraStatus('error');
+    }
+  };
 
   // Start interview session with backend
   const startInterview = async () => {
@@ -141,7 +276,7 @@ const MockInterview = ({ jobDescription, jobTitle = "Software Developer" }) => {
         },
         body: JSON.stringify({
           job_description: jobDescription,
-          num_questions: 5
+          num_questions: 1
         })
       });
 
@@ -162,10 +297,7 @@ const MockInterview = ({ jobDescription, jobTitle = "Software Developer" }) => {
 
       console.log(data.questions, questionsRef.current)
 
-      // Speak first question after a delay
-      setTimeout(() => {
-        speakQuestion(data.questions[0]);
-      }, 1000);
+     
 
     } catch (err) {
       setError(err.message || 'Failed to start interview. Please check your camera/microphone permissions.');
@@ -174,6 +306,13 @@ const MockInterview = ({ jobDescription, jobTitle = "Software Developer" }) => {
       setLoading(false);
     }
   };
+
+  useEffect(()=>{
+    if(iscameraOn){
+      console.log(iscameraOn, "inspeak")
+      speakQuestion(questions[0]);
+    }
+  },[cameraStatus])
 
   const speakQuestion = (question) => {
     if ('speechSynthesis' in window) {
@@ -284,9 +423,6 @@ const MockInterview = ({ jobDescription, jobTitle = "Software Developer" }) => {
       formData.append('video_file', videoBlob, `answer_${currentQuestionIndex}.webm`);
 
 
-
-      console.log(BACKEND_URL)
-
       const response = await axios.post(`${BACKEND_URL}/mock-interview/submit-answer`, formData);
 
 
@@ -349,13 +485,14 @@ const MockInterview = ({ jobDescription, jobTitle = "Software Developer" }) => {
 
     try {
       // Get session results from backend
-      const response = await fetch(`${BACKEND_URL}/mock-interview/session/${sessionIdRef.current}`);
 
-      if (!response.ok) {
-        throw new Error('Failed to get interview results');
-      }
+      const response = await axios.get(`/api/mock_iterview_result/${sessionIdRef.current}`);
 
-      const sessionResults = await response.json();
+      // if (!response.ok) {
+      //   throw new Error('Failed to get interview results');
+      // }
+
+      const sessionResults = response.data.result;
       setResults(sessionResults);
       setCurrentStep('results');
 
@@ -490,16 +627,53 @@ const MockInterview = ({ jobDescription, jobTitle = "Software Developer" }) => {
         </div>
 
         <div className="relative">
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            width="640"
-            height="480"
-            key={Date.now()}
-          // className="z-[99] w-full max-w-md mx-auto rounded-lg border-2 border-gray-200 dark:border-gray-700"
-          />
+          <div className="mb-6">
+            <div className="relative bg-black rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+                style={{
+                  transform: 'scaleX(-1)', // Mirror the video
+                  maxHeight: '400px'
+                }}
+              />
+              {cameraStatus === 'idle' && (
+                <div className="absolute inset-0 flex items-center justify-center text-white">
+                  <div className="text-center">
+                    <Video className="w-16 h-16 mx-auto mb-2 opacity-50" />
+                    <p>Camera not started</p>
+                  </div>
+                </div>
+              )}
+              {cameraStatus === 'requesting' && (
+                <div className="absolute inset-0 flex items-center justify-center text-white">
+                  <div className="text-center">
+                    <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full mx-auto mb-2"></div>
+                    <p>Requesting camera access...</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            {cameraStatus === 'idle' || cameraStatus === 'error' ? (
+              <button
+                onClick={startCamera}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+              >
+                <Video className="w-4 h-4" />
+                Start Camera
+              </button>
+            ) : (
+              <>
+                <h2>Video recorded</h2>
+              </>
+            )}
+          </div>
 
           {isRecording && (
             <motion.button

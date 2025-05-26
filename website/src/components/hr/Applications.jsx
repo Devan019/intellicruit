@@ -1,34 +1,3 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Trophy, 
-  Medal, 
-  Award, 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Calendar, 
-  Briefcase, 
-  GraduationCap, 
-  Star, 
-  Filter,
-  X,
-  Eye,
-  Download,
-  ExternalLink,
-  TrendingUp,
-  Target,
-  Zap,
-  Users,
-  Clock,
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight
-} from 'lucide-react';
-import axios from 'axios';
 
 // Mock data - replace with your API call
 const mockApplications = [
@@ -190,37 +159,75 @@ const mockApplications = [
   }
 ];
 
-const JobLeaderboard = ({jobid}) => {
-  const [applications, setApplications] = useState(mockApplications);
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Trophy, Medal, Award, Eye, Filter, Mail, Phone, MapPin,
+  Briefcase, GraduationCap, Zap, Clock, Calendar, X,
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
+  CalendarDays, MessageSquare, UserCheck, CheckCircle,
+  AlertCircle, Send, Loader2
+} from 'lucide-react';
+import axios from 'axios';
+
+const JobLeaderboard = ({ jobid }) => {
+  const [applications, setApplications] = useState([]);
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [limit, setLimit] = useState(10);
   const [statusFilter, setStatusFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
   const [isDark, setIsDark] = useState(false);
-  
+
+  const [loading, setloading] = useState(false)
+
   // Search and Pagination states
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  
+  // Scheduler states
+  const [showScheduler, setShowScheduler] = useState(false);
+  const [schedulerAction, setSchedulerAction] = useState('');
+  const [schedulerLoading, setSchedulerLoading] = useState(false);
+  const [schedulerResult, setSchedulerResult] = useState(null);
+  const [availabilityForm, setAvailabilityForm] = useState({
+    recruiter: '',
+    candidate: ''
+  });
+  const [jobDetails, setJobDetails] = useState({
+    company: '',
+    position: '',
+    tone: 'professional'
+  });
 
   // Fetch applications
   useEffect(() => {
     const fetchApplications = async () => {
+      setloading(true)
       try {
         const api = await axios.get(`/api/jobapplications/${jobid}`);
         const data = api.data || [];
         console.log(data);
         setApplications(data);
+        
+        const jobposter =  await axios.get(`/api/job/${jobid}`)
+        setAvailabilityForm((prev)=>{
+          return {
+            candidate : data,
+            recruiter: jobposter.data.job
+          }
+        })
+
+        setloading(false)
       } catch (error) {
+        setloading(false)
         console.error('Error fetching applications:', error);
         setApplications([]);
       }
     }
 
     if (jobid) {
-      // fetchApplications();
+      fetchApplications();
     }
   }, [jobid]);
 
@@ -228,10 +235,10 @@ const JobLeaderboard = ({jobid}) => {
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     setIsDark(mediaQuery.matches);
-    
+
     const handleChange = (e) => setIsDark(e.matches);
     mediaQuery.addEventListener('change', handleChange);
-    
+
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
@@ -239,19 +246,15 @@ const JobLeaderboard = ({jobid}) => {
   const getFilteredAndSearchedApplications = () => {
     return applications
       .filter(app => {
-        // Status filter
         const statusMatch = statusFilter === 'all' || app.status === statusFilter;
-        
-        // Search filter
-        const searchMatch = searchTerm === '' || 
+        const searchMatch = searchTerm === '' ||
           `${app.personalInfo?.firstName} ${app.personalInfo?.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
           app.personalInfo?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           app.skills?.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          app.experience?.some(exp => 
+          app.experience?.some(exp =>
             exp.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             exp.position?.toLowerCase().includes(searchTerm.toLowerCase())
           );
-        
         return statusMatch && searchMatch;
       })
       .sort((a, b) => (b.total_score || 0) - (a.total_score || 0));
@@ -273,6 +276,99 @@ const JobLeaderboard = ({jobid}) => {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, statusFilter, limit]);
+
+  // Scheduler functions
+  const openScheduler = (action, application) => {
+    setSelectedApplication(application);
+    setSchedulerAction(action);
+    setShowScheduler(true);
+    setSchedulerResult(null);
+
+    // Pre-fill candidate info
+    if (application) {
+      setAvailabilityForm(prev => ({
+        ...prev,
+        candidate: `${application.personalInfo?.firstName} ${application.personalInfo?.lastName}`
+      }));
+    }
+
+    if(action == "communicate"){
+
+      handleGenerateCommunication()
+    }else if(action == "schedule"){
+      handleScheduleInterview()
+    }
+  };
+
+  const handleScheduleInterview = async () => {
+
+    console.log(selectedApplication, availabilityForm)
+
+    if (!selectedApplication || !availabilityForm.recruiter || !availabilityForm.candidate) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    setloading(true);
+
+    setSchedulerLoading(true);
+    try {
+      const requestData = {
+        candidate: {
+          name: `${selectedApplication.personalInfo?.firstName} ${selectedApplication.personalInfo?.lastName}`,
+          email: selectedApplication.personalInfo?.email
+        },
+        job: {
+          company: jobDetails.company,
+          position: jobDetails.position,
+          tone: jobDetails.tone
+        },
+        availability: {
+          recruiter: availabilityForm.recruiter,
+          candidate: availabilityForm.candidate
+        }
+      };
+
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_FASTAPI_URI}/schedule-interview/`, requestData);
+      setSchedulerResult(response.data);
+
+    } catch (error) {
+      console.error('Error scheduling interview:', error);
+      setSchedulerResult({ error: 'Failed to schedule interview' });
+    } finally {
+      setloading(false)
+      setSchedulerLoading(false);
+    }
+  };
+
+  const handleGenerateCommunication = async (type) => {
+    if (!selectedApplication) return;
+    setloading(true)
+    setSchedulerLoading(true);
+    try {
+      const requestData = {
+        type: type,
+        candidate: {
+          name: `${selectedApplication.personalInfo?.firstName} ${selectedApplication.personalInfo?.lastName}`,
+          email: selectedApplication.personalInfo?.email
+        },
+        job: {
+          company: jobDetails.company,
+          position: jobDetails.position,
+          tone: jobDetails.tone
+        }
+      };
+
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_FASTAPI_URI}/generate-communication/`, requestData);
+      setSchedulerResult(response.data);
+    } catch (error) {
+      console.error('Error generating communication:', error);
+      setSchedulerResult({ error: 'Failed to generate communication' });
+    } finally {
+      setloading(false)
+      setSchedulerLoading(false);
+    }
+  };
 
   const getRankIcon = (rank) => {
     if (rank === 1) return <Trophy className="w-6 h-6 text-yellow-500" />;
@@ -301,6 +397,16 @@ const JobLeaderboard = ({jobid}) => {
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${isDark ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
+
+      {loading && (
+        <div className="fixed inset-0 bg-blue-50/40 dark:bg-blue-900/20 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="flex items-center p-4 bg-white dark:bg-gray-800 rounded shadow">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+            <span className="text-blue-800 dark:text-blue-200">Loading...</span>
+          </div>
+        </div>
+      )}
+
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <motion.div
@@ -342,8 +448,6 @@ const JobLeaderboard = ({jobid}) => {
               Filters
             </button>
           </div>
-
-          
         </motion.div>
 
         {/* Filters */}
@@ -398,8 +502,7 @@ const JobLeaderboard = ({jobid}) => {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.1 }}
                   whileHover={{ scale: 1.02, y: -2 }}
-                  className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 cursor-pointer transition-all hover:shadow-xl"
-                  onClick={() => setSelectedApplication(app)}
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 transition-all hover:shadow-xl"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -407,7 +510,7 @@ const JobLeaderboard = ({jobid}) => {
                         {getRankIcon(globalRank)}
                         <span className="text-lg font-bold text-gray-600 dark:text-gray-400">#{globalRank}</span>
                       </div>
-                      
+
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
                           {app.personalInfo?.firstName?.[0] || 'A'}{app.personalInfo?.lastName?.[0] || 'B'}
@@ -446,7 +549,32 @@ const JobLeaderboard = ({jobid}) => {
                         {app.status}
                       </span>
 
-                      <Eye className="w-5 h-5 text-gray-400" />
+                      {/* Action Buttons */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setSelectedApplication(app)}
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                          title="View Details"
+                        >
+                          <Eye className="w-5 h-5 text-gray-400" />
+                        </button>
+
+                        <button
+                          onClick={() => openScheduler('schedule', app)}
+                          className="p-2 hover:bg-blue-100 dark:hover:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-lg transition-colors"
+                          title="Schedule Interview"
+                        >
+                          <CalendarDays className="w-5 h-5" />
+                        </button>
+
+                        <button
+                          onClick={() => openScheduler('communicate', app)}
+                          className="p-2 hover:bg-green-100 dark:hover:bg-green-900 text-green-600 dark:text-green-400 rounded-lg transition-colors"
+                          title="Send Message"
+                        >
+                          <MessageSquare className="w-5 h-5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -469,7 +597,7 @@ const JobLeaderboard = ({jobid}) => {
             >
               <ChevronsLeft className="w-4 h-4" />
             </button>
-            
+
             <button
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
@@ -495,11 +623,10 @@ const JobLeaderboard = ({jobid}) => {
                   <button
                     key={pageNum}
                     onClick={() => setCurrentPage(pageNum)}
-                    className={`px-3 py-2 rounded-lg border transition-colors ${
-                      currentPage === pageNum
+                    className={`px-3 py-2 rounded-lg border transition-colors ${currentPage === pageNum
                         ? 'bg-blue-600 text-white border-blue-600'
                         : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                    }`}
+                      }`}
                   >
                     {pageNum}
                   </button>
@@ -514,7 +641,7 @@ const JobLeaderboard = ({jobid}) => {
             >
               <ChevronRight className="w-4 h-4" />
             </button>
-            
+
             <button
               onClick={() => setCurrentPage(totalPages)}
               disabled={currentPage === totalPages}
@@ -531,7 +658,7 @@ const JobLeaderboard = ({jobid}) => {
 
         {/* Application Details Modal */}
         <AnimatePresence>
-          {selectedApplication && (
+          {selectedApplication && !showScheduler && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -552,12 +679,28 @@ const JobLeaderboard = ({jobid}) => {
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                       Application Details
                     </h2>
-                    <button
-                      onClick={() => setSelectedApplication(null)}
-                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => openScheduler('schedule', selectedApplication)}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                      >
+                        <CalendarDays className="w-4 h-4" />
+                        Schedule
+                      </button>
+                      <button
+                        onClick={() => openScheduler('communicate', selectedApplication)}
+                        className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                        Message
+                      </button>
+                      <button
+                        onClick={() => setSelectedApplication(null)}
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
 
                   {/* Candidate Info */}
@@ -565,11 +708,11 @@ const JobLeaderboard = ({jobid}) => {
                     <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-700 dark:to-gray-600 rounded-lg p-6">
                       <div className="flex items-center gap-4 mb-4">
                         <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
-                          {selectedApplication.personalInfo.firstName[0]}{selectedApplication.personalInfo.lastName[0]}
+                          {selectedApplication.personalInfo?.firstName?.[0] || 'A'}{selectedApplication.personalInfo?.lastName?.[0] || 'B'}
                         </div>
                         <div>
                           <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                            {selectedApplication.personalInfo.firstName} {selectedApplication.personalInfo.lastName}
+                            {selectedApplication.personalInfo?.firstName} {selectedApplication.personalInfo?.lastName}
                           </h3>
                           <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedApplication.status)}`}>
                             {selectedApplication.status}
@@ -580,15 +723,15 @@ const JobLeaderboard = ({jobid}) => {
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
                           <Mail className="w-4 h-4" />
-                          {selectedApplication.personalInfo.email}
+                          {selectedApplication.personalInfo?.email}
                         </div>
                         <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
                           <Phone className="w-4 h-4" />
-                          {selectedApplication.personalInfo.phone}
+                          {selectedApplication.personalInfo?.phone}
                         </div>
                         <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
                           <MapPin className="w-4 h-4" />
-                          {selectedApplication.personalInfo.city}, {selectedApplication.personalInfo.state}
+                          {selectedApplication.personalInfo?.city}, {selectedApplication.personalInfo?.state}
                         </div>
                       </div>
                     </div>
@@ -597,7 +740,7 @@ const JobLeaderboard = ({jobid}) => {
                     <div className="bg-white dark:bg-gray-700 rounded-lg p-6 border border-gray-200 dark:border-gray-600">
                       <h4 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Score Breakdown</h4>
                       <div className="space-y-3">
-                        {Object.entries(selectedApplication.scores).map(([skill, score]) => (
+                        {selectedApplication.scores && Object.entries(selectedApplication.scores).map(([skill, score]) => (
                           <div key={skill} className="flex items-center justify-between">
                             <span className="text-sm font-medium text-gray-700 dark:text-gray-300 capitalize">
                               {skill.replace('_', ' ')}
@@ -618,8 +761,8 @@ const JobLeaderboard = ({jobid}) => {
                         <div className="pt-2 border-t border-gray-200 dark:border-gray-600">
                           <div className="flex items-center justify-between">
                             <span className="font-bold text-gray-900 dark:text-gray-100">Total Score</span>
-                            <span className={`text-xl font-bold ${getScoreColor(selectedApplication.total_score)}`}>
-                              {selectedApplication.total_score}/500
+                            <span className={`text-xl font-bold ${getScoreColor(selectedApplication.total_score || 0)}`}>
+                              {selectedApplication.total_score || 0}/500
                             </span>
                           </div>
                         </div>
@@ -634,7 +777,7 @@ const JobLeaderboard = ({jobid}) => {
                         <Briefcase className="w-5 h-5" />
                         Experience
                       </h4>
-                      {selectedApplication.experience.map((exp, index) => (
+                      {selectedApplication.experience?.map((exp, index) => (
                         <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-3">
                           <h5 className="font-semibold text-gray-900 dark:text-gray-100">{exp.position}</h5>
                           <p className="text-blue-600 dark:text-blue-400 font-medium">{exp.company}</p>
@@ -650,7 +793,7 @@ const JobLeaderboard = ({jobid}) => {
                         <GraduationCap className="w-5 h-5" />
                         Education
                       </h4>
-                      {selectedApplication.education.map((edu, index) => (
+                      {selectedApplication.education?.map((edu, index) => (
                         <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-3">
                           <h5 className="font-semibold text-gray-900 dark:text-gray-100">{edu.degree}</h5>
                           <p className="text-blue-600 dark:text-blue-400 font-medium">{edu.institution}</p>
@@ -669,7 +812,7 @@ const JobLeaderboard = ({jobid}) => {
                       Skills
                     </h4>
                     <div className="flex flex-wrap gap-2">
-                      {selectedApplication.skills.map((skill, index) => (
+                      {selectedApplication.skills?.map((skill, index) => (
                         <span
                           key={index}
                           className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm font-medium"
@@ -688,7 +831,7 @@ const JobLeaderboard = ({jobid}) => {
                     </h4>
                     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                       <Calendar className="w-4 h-4" />
-                      Submitted on {selectedApplication.submittedAt.toLocaleDateString()}
+                      Submitted on {selectedApplication?.submittedAt?.toLocaleDateString()}
                     </div>
                   </div>
                 </div>
