@@ -276,7 +276,7 @@ const MockInterview = ({ jobDescription, jobTitle = "Software Developer" }) => {
         },
         body: JSON.stringify({
           job_description: jobDescription,
-          num_questions: 1
+          num_questions: 5
         })
       });
 
